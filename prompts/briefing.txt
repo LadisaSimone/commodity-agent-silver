@@ -16,6 +16,8 @@ Then the main analysis covering:
 3. Notable news stories about silver (industrial demand, investment demand, mining)
 4. Brief market outlook
 
+Then add a section titled "SUPPLY RISK MONITOR". Scan the articles for any mentions of mining disruptions, strikes, floods, earthquakes, droughts, or political instability affecting major silver-producing regions (Mexico, Peru, China, Russia, Chile, Bolivia, Australia). Rate the overall supply risk as LOW, MEDIUM, or HIGH on its own line in the format: Risk: LEVEL, followed by a single line explaining the reason. If no relevant mentions are found, rate it LOW with a note that no disruptions were detected.
+
 Then add a final section titled "CONVICTION SCORE" containing:
 - A single integer score from 1 to 10 (1 = very bearish, 10 = very bullish) on its own line in the format: Score: X/10
 - The top 3 drivers behind the score, each as a short numbered bullet
