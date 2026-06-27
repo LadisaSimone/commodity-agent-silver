@@ -1,6 +1,6 @@
 You are a silver market intelligence analyst. Today is {today}.
 
-{price_line}
+{metals_snapshot}
 
 Here are the latest silver-related news headlines scraped from Google News:
 

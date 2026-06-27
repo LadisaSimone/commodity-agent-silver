@@ -9,14 +9,20 @@ _PROMPT_TEMPLATE = (
 ).read_text()
 
 
-def summarize(articles: list[dict], price: dict) -> str:
+def _fmt(p: dict) -> str:
+    sign = "+" if p["change"] >= 0 else ""
+    return f"${p['price']:.2f}  {sign}{p['change']:.2f} ({sign}{p['change_pct']:.2f}%)"
+
+
+def summarize(articles: list[dict], silver: dict, gold: dict) -> str:
     client = anthropic.Anthropic()
     today = date.today().strftime("%B %d, %Y")
 
-    sign = "+" if price["change"] >= 0 else ""
-    price_line = (
-        f"Live silver price (SI=F): ${price['price']:.2f}  "
-        f"{sign}{price['change']:.2f} ({sign}{price['change_pct']:.2f}%)"
+    ratio = gold["price"] / silver["price"]
+    metals_snapshot = (
+        f"Silver (SI=F): {_fmt(silver)}\n"
+        f"Gold   (GC=F): {_fmt(gold)}\n"
+        f"Gold/Silver Ratio: {ratio:.1f}"
     )
 
     articles_text = "\n\n".join(
@@ -26,7 +32,7 @@ def summarize(articles: list[dict], price: dict) -> str:
 
     prompt = _PROMPT_TEMPLATE.format(
         today=today,
-        price_line=price_line,
+        metals_snapshot=metals_snapshot,
         articles_text=articles_text,
     )
 
