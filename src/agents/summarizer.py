@@ -26,7 +26,7 @@ def summarize(articles: list[dict], silver: dict, gold: dict) -> str:
     )
 
     articles_text = "\n\n".join(
-        f"Title: {a['title']}\nDate: {a['date']}\nSummary: {a['description']}"
+        f"Title: {a['title']}\nDate: {a['date']}\nURL: {a.get('url', '')}\nSummary: {a['description']}"
         for a in articles
     )
 

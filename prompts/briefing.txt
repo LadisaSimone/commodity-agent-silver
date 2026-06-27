@@ -8,7 +8,9 @@ Here are the latest silver-related news headlines scraped from Google News:
 
 Based on these articles, produce a clean daily briefing with the following sections in order:
 
-First, a section titled "TOP STORIES BY IMPACT" that ranks the 5 articles with the highest likely market impact. List them 1-5 with the article title and a single line explaining why it matters for silver prices.
+First, a section titled "TOP STORIES BY IMPACT" that ranks the 5 articles with the highest likely market impact. List them 1-5 using this exact format:
+1. [Article Title](URL) — one-line reason why it matters for silver prices
+Use the exact URL from the article data. Do not modify or shorten URLs.
 
 Then the main analysis covering:
 1. Current silver price and recent price movements (if mentioned)

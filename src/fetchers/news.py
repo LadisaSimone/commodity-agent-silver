@@ -21,10 +21,17 @@ def fetch_articles() -> list[dict]:
         raw_desc = description.get_text() if description else ""
         clean_desc = BeautifulSoup(raw_desc, "html.parser").get_text(strip=True)
 
+        link_tag = item.find("link")
+        guid_tag = item.find("guid")
+        url = link_tag.get_text(strip=True) if link_tag else ""
+        if not url and guid_tag:
+            url = guid_tag.get_text(strip=True)
+
         articles.append({
             "title": title.get_text(strip=True) if title else "",
             "date": pub_date.get_text(strip=True) if pub_date else "",
             "description": clean_desc,
+            "url": url,
         })
 
     return articles
