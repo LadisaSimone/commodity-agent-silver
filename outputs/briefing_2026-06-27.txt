@@ -1,0 +1,68 @@
+# SILVER MARKET INTELLIGENCE BRIEFING
+**June 27, 2026**
+
+---
+
+## TOP STORIES BY IMPACT
+
+1. **ING Cuts Gold and Silver Forecasts as Rising Yields and Stronger Dollar Weigh on Prices** (KITCO, Jun 24)
+   - Major bank downgrade signals institutional shift in precious metals outlook; directly impacts demand from fund managers and institutions.
+
+2. **Gold, silver and bitcoin tumble as 'debasement' trade unwinds** (CoinDesk, Jun 24)
+   - Signals unwinding of inflation-hedge positioning; indicates broader macro rotation away from precious metals that could accelerate selling.
+
+3. **Silver's 50% Crash Reaches 'Oversold' Levels: Should You Buy The Dip?** (Benzinga, Jun 24)
+   - Highlights extreme volatility and technical extremes; suggests potential for mean reversion or capitulation selling depending on sentiment.
+
+4. **Gold and silver tumble as rate-hike fears hit precious metals** (CNBC, Jun 23)
+   - Rate expectations are primary headwind; higher yields make non-yielding silver less attractive relative to bonds.
+
+5. **Silver Price Forecast: Silver Pullback Sets Up Rebound Near $50 Support** (FXEmpire, Jun 26)
+   - Establishes key technical support level; $50 represents potential capitulation point for longer-term value investors.
+
+---
+
+## MARKET ANALYSIS
+
+### Current Price & Recent Movement
+Silver is trading at **$59.22/oz (+4.57% today)** after a volatile decline that saw prices fall below $60 for the first time since December 2025. The metal has experienced a **50% crash from recent highs**, with reports of prices touching $57/oz as recently as Friday (Jun 26).
+
+### Key Market Drivers
+
+**Headwinds:**
+- **Rising Treasury Yields & Rate-Hike Fears** – Higher interest rates reduce silver's appeal as a non-yielding asset
+- **Stronger US Dollar** – Dollar strength pressures dollar-denominated commodities
+- **'Debasement Trade' Unwinding** – Inflation-hedge positioning being liquidated across precious metals complex
+- **ETF Selling** – Institutional outflows from silver funds adding downward pressure
+- **Negative Analyst Revisions** – ING's forecast cut signals weakening conviction among major institutions
+
+**Potential Supports:**
+- Technical oversold conditions creating reversal opportunities
+- Long-term bullish outlook from some analysts (Sprott sees strong fundamentals)
+- Industrial demand foundations remain intact
+
+### Notable Developments
+- Silver briefly broke below $60, triggering technical selling
+- Comex inventory levels being monitored (mentioned in KITCO market update)
+- Analyst consensus shows "very limited downside" below current levels, suggesting $50 may be meaningful support
+- Industrial applications (solar, electronics) not yet mentioned as demand concerns
+
+---
+
+## MARKET OUTLOOK
+
+**Short-term (Next 2 weeks):** Expect continued volatility with downside bias unless Treasury yields stabilize. Technical support at $50 is critical; break below would signal deeper structural weakness.
+
+**Medium-term (1-3 months):** Range-bound trading likely between $50-65 until macro clarity improves on interest rate trajectory. Oversold technicals could trigger relief rallies.
+
+**Sentiment:** Capitulation-level selling suggests some capitulation may be near, but ING's downgrade indicates institutional conviction remains weak.
+
+---
+
+## CONVICTION SCORE
+
+**Score: 3/10**
+
+1. **Rising real yields are a major headwind** – Higher rates reduce precious metals attractiveness; no sign of imminent reversal
+2. **Oversold technicals suggest limited downside but lack bullish catalysts** – While further crashes may be limited, near-term upside is unclear without macro shifts
+3. **Debasement trade unwinding signals broader positioning unwind** – Until inflation concerns return or rate-cut expectations emerge, institutional demand will remain depressed

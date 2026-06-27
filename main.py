@@ -1,118 +1,43 @@
-import anthropic
 from datetime import date
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-import requests
-import yfinance as yf
-from bs4 import BeautifulSoup
+from src.fetchers.price import fetch_silver_price
+from src.fetchers.news import fetch_articles
+from src.agents.summarizer import summarize
+from config.settings import OUTPUTS_DIR
 
 load_dotenv()
 
-RSS_URL = (
-    "https://news.google.com/rss/search"
-    "?q=silver+market+price&hl=en-US&gl=US&ceid=US:en"
-)
 
-
-def fetch_silver_price() -> dict:
-    fi = yf.Ticker("SI=F").fast_info
-    price = fi.last_price
-    prev_close = fi.previous_close
-    change = price - prev_close
-    change_pct = (change / prev_close) * 100
-    return {"price": price, "change": change, "change_pct": change_pct}
-
-
-def fetch_articles() -> list[dict]:
-    response = requests.get(
-        RSS_URL,
-        headers={"User-Agent": "Mozilla/5.0"},
-        timeout=10,
-    )
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.content, "xml")
-    articles = []
-    for item in soup.find_all("item")[:15]:
-        title = item.find("title")
-        description = item.find("description")
-        pub_date = item.find("pubDate")
-
-        raw_desc = description.get_text() if description else ""
-        clean_desc = BeautifulSoup(raw_desc, "html.parser").get_text(strip=True)
-
-        articles.append({
-            "title": title.get_text(strip=True) if title else "",
-            "date": pub_date.get_text(strip=True) if pub_date else "",
-            "description": clean_desc,
-        })
-
-    return articles
-
-
-def summarize(articles: list[dict], price: dict) -> str:
-    client = anthropic.Anthropic()
-    today = date.today().strftime("%B %d, %Y")
-
+def _price_header(price: dict) -> str:
     sign = "+" if price["change"] >= 0 else ""
-    price_line = (
-        f"Live silver price (SI=F): ${price['price']:.2f}  "
-        f"{sign}{price['change']:.2f} ({sign}{price['change_pct']:.2f}%)"
+    return (
+        f"  SI=F   ${price['price']:.2f}   "
+        f"{sign}{price['change']:.2f}   ({sign}{price['change_pct']:.2f}%)"
     )
 
-    articles_text = "\n\n".join(
-        f"Title: {a['title']}\nDate: {a['date']}\nSummary: {a['description']}"
-        for a in articles
-    )
 
-    response = client.messages.create(
-        model="claude-haiku-4-5",
-        max_tokens=2048,
-        messages=[
-            {
-                "role": "user",
-                "content": f"""You are a silver market intelligence analyst. Today is {today}.
-
-{price_line}
-
-Here are the latest silver-related news headlines scraped from Google News:
-
-{articles_text}
-
-Based on these articles, produce a clean daily briefing with the following sections in order:
-
-First, a section titled "TOP STORIES BY IMPACT" that ranks the 5 articles with the highest likely market impact. List them 1–5 with the article title and a single line explaining why it matters for silver prices.
-
-Then the main analysis covering:
-1. Current silver price and recent price movements (if mentioned)
-2. Key market drivers and factors affecting silver today
-3. Notable news stories about silver (industrial demand, investment demand, mining)
-4. Brief market outlook
-
-Then add a final section titled "CONVICTION SCORE" containing:
-- A single integer score from 1 to 10 (1 = very bearish, 10 = very bullish) on its own line in the format: Score: X/10
-- The top 3 drivers behind the score, each as a short numbered bullet
-
-Format the briefing clearly with sections and make it concise and actionable.""",
-            }
-        ],
-    )
-
-    return response.content[0].text
+def save_briefing(briefing: str) -> Path:
+    out_dir = Path(OUTPUTS_DIR)
+    out_dir.mkdir(exist_ok=True)
+    path = out_dir / f"briefing_{date.today().isoformat()}.txt"
+    path.write_text(briefing)
+    return path
 
 
 def print_briefing(briefing: str, price: dict) -> None:
     today = date.today().strftime("%B %d, %Y")
-    separator = "=" * 60
-    sign = "+" if price["change"] >= 0 else ""
-    print(f"\n{separator}")
+    sep = "=" * 60
+    print(f"\n{sep}")
     print(f"  SILVER MARKET INTELLIGENCE BRIEFING")
     print(f"  {today}")
-    print(f"{separator}")
-    print(f"  SI=F   ${price['price']:.2f}   {sign}{price['change']:.2f}   ({sign}{price['change_pct']:.2f}%)")
-    print(f"{separator}\n")
+    print(f"{sep}")
+    print(_price_header(price))
+    print(f"{sep}\n")
     print(briefing)
-    print(f"\n{separator}\n")
+    print(f"\n{sep}\n")
 
 
 def main() -> None:
@@ -123,6 +48,8 @@ def main() -> None:
     print(f"Found {len(articles)} articles. Generating briefing...")
     briefing = summarize(articles, price)
     print_briefing(briefing, price)
+    path = save_briefing(briefing)
+    print(f"Briefing saved to {path}")
 
 
 if __name__ == "__main__":
