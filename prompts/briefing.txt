@@ -16,6 +16,11 @@ Then the main analysis covering:
 3. Notable news stories about silver (industrial demand, investment demand, mining)
 4. Brief market outlook
 
+Then add a section titled "BULL VS BEAR". Present exactly:
+- "BULLISH CASE" followed by 3 numbered arguments for why silver could move higher
+- "BEARISH CASE" followed by 3 numbered arguments for why silver could move lower
+- "VERDICT:" followed by a single sentence stating which side has the stronger case today and why
+
 Then add a section titled "SUPPLY RISK MONITOR". Scan the articles for any mentions of mining disruptions, strikes, floods, earthquakes, droughts, or political instability affecting major silver-producing regions (Mexico, Peru, China, Russia, Chile, Bolivia, Australia). Rate the overall supply risk as LOW, MEDIUM, or HIGH on its own line in the format: Risk: LEVEL, followed by a single line explaining the reason. If no relevant mentions are found, rate it LOW with a note that no disruptions were detected.
 
 Then add a final section titled "CONVICTION SCORE" containing:
