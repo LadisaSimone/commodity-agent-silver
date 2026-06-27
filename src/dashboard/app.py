@@ -177,6 +177,42 @@ def generate_pdf(briefing: str, silver: dict, gold: dict, briefing_date: str) ->
     return buffer.getvalue()
 
 
+# ── theme CSS ─────────────────────────────────────────────────────────────────
+
+_DOWNLOAD_BTN_CSS = """
+[data-testid="stDownloadButton"] button {
+    background-color: #1a73e8 !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+[data-testid="stDownloadButton"] button:hover {
+    background-color: #1557b0 !important;
+    color: #ffffff !important;
+}
+"""
+
+_DARK_CSS = f"""
+<style>
+.stApp, .main, .main .block-container {{ background-color: #0e1117 !important; }}
+section[data-testid="stSidebar"] > div {{ background-color: #161b27 !important; }}
+[data-testid="stMetricValue"] {{ color: #c0c0c0 !important; font-weight: 700; }}
+{_DOWNLOAD_BTN_CSS}
+</style>
+"""
+
+_LIGHT_CSS = f"""
+<style>
+.stApp, .main, .main .block-container {{ background-color: #f8f9fa !important; }}
+section[data-testid="stSidebar"] > div {{ background-color: #eef0f4 !important; }}
+h1, h2, h3, h4, h5, h6 {{ color: #0e1117 !important; }}
+p, li, label, .stMarkdown {{ color: #31333f !important; }}
+[data-testid="stMetricValue"] {{ color: #444444 !important; font-weight: 700; }}
+[data-testid="stMetricLabel"] {{ color: #666666 !important; }}
+[data-testid="stCaptionContainer"] {{ color: #666666 !important; }}
+{_DOWNLOAD_BTN_CSS}
+</style>
+"""
+
 # ── page config + CSS ─────────────────────────────────────────────────────────
 
 st.set_page_config(
@@ -186,14 +222,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    <style>
-    [data-testid="stMetricValue"] { color: #c0c0c0; font-weight: 700; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = True
+
+st.markdown(_DARK_CSS if st.session_state.dark_mode else _LIGHT_CSS, unsafe_allow_html=True)
 
 
 # ── load data ─────────────────────────────────────────────────────────────────
@@ -205,6 +237,8 @@ ratio = gold["price"] / silver["price"]
 # ── sidebar ───────────────────────────────────────────────────────────────────
 
 with st.sidebar:
+    st.toggle("Dark mode", key="dark_mode")
+    st.divider()
     st.markdown("### Silver Market Intelligence")
     st.markdown(
         "An AI-powered daily briefing agent that fetches live metals prices "
