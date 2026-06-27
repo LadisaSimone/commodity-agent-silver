@@ -61,7 +61,11 @@ Here are the latest silver-related news headlines scraped from Google News:
 
 {articles_text}
 
-Based on these articles, produce a clean daily briefing covering:
+Based on these articles, produce a clean daily briefing with the following sections in order:
+
+First, a section titled "TOP STORIES BY IMPACT" that ranks the 5 articles with the highest likely market impact. List them 1–5 with the article title and a single line explaining why it matters for silver prices.
+
+Then the main analysis covering:
 1. Current silver price and recent price movements (if mentioned)
 2. Key market drivers and factors affecting silver today
 3. Notable news stories about silver (industrial demand, investment demand, mining)
