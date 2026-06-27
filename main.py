@@ -67,6 +67,10 @@ Based on these articles, produce a clean daily briefing covering:
 3. Notable news stories about silver (industrial demand, investment demand, mining)
 4. Brief market outlook
 
+Then add a final section titled "CONVICTION SCORE" containing:
+- A single integer score from 1 to 10 (1 = very bearish, 10 = very bullish) on its own line in the format: Score: X/10
+- The top 3 drivers behind the score, each as a short numbered bullet
+
 Format the briefing clearly with sections and make it concise and actionable.""",
             }
         ],
