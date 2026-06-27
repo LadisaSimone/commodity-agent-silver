@@ -74,12 +74,12 @@ def split_conviction(text: str) -> tuple[str, str | None]:
     return text.strip(), None
 
 
-def parse_score(conviction_text: str) -> int | None:
-    m = re.search(r"Score:\s*(\d+)/10", conviction_text)
-    return int(m.group(1)) if m else None
+def parse_score(conviction_text: str) -> float | None:
+    m = re.search(r"Score:\s*(\d+(?:\.\d+)?)/10", conviction_text)
+    return float(m.group(1)) if m else None
 
 
-def score_badge_html(score: int) -> str:
+def score_badge_html(score: float) -> str:
     if score <= 3:
         bg, label = "#922b21", "BEARISH"
     elif score <= 6:
