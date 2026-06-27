@@ -3,6 +3,7 @@ from datetime import date
 from dotenv import load_dotenv
 
 import requests
+import yfinance as yf
 from bs4 import BeautifulSoup
 
 load_dotenv()
@@ -11,6 +12,15 @@ RSS_URL = (
     "https://news.google.com/rss/search"
     "?q=silver+market+price&hl=en-US&gl=US&ceid=US:en"
 )
+
+
+def fetch_silver_price() -> dict:
+    fi = yf.Ticker("SI=F").fast_info
+    price = fi.last_price
+    prev_close = fi.previous_close
+    change = price - prev_close
+    change_pct = (change / prev_close) * 100
+    return {"price": price, "change": change, "change_pct": change_pct}
 
 
 def fetch_articles() -> list[dict]:
@@ -40,9 +50,15 @@ def fetch_articles() -> list[dict]:
     return articles
 
 
-def summarize(articles: list[dict]) -> str:
+def summarize(articles: list[dict], price: dict) -> str:
     client = anthropic.Anthropic()
     today = date.today().strftime("%B %d, %Y")
+
+    sign = "+" if price["change"] >= 0 else ""
+    price_line = (
+        f"Live silver price (SI=F): ${price['price']:.2f}  "
+        f"{sign}{price['change']:.2f} ({sign}{price['change_pct']:.2f}%)"
+    )
 
     articles_text = "\n\n".join(
         f"Title: {a['title']}\nDate: {a['date']}\nSummary: {a['description']}"
@@ -56,6 +72,8 @@ def summarize(articles: list[dict]) -> str:
             {
                 "role": "user",
                 "content": f"""You are a silver market intelligence analyst. Today is {today}.
+
+{price_line}
 
 Here are the latest silver-related news headlines scraped from Google News:
 
@@ -83,23 +101,28 @@ Format the briefing clearly with sections and make it concise and actionable."""
     return response.content[0].text
 
 
-def print_briefing(briefing: str) -> None:
+def print_briefing(briefing: str, price: dict) -> None:
     today = date.today().strftime("%B %d, %Y")
     separator = "=" * 60
+    sign = "+" if price["change"] >= 0 else ""
     print(f"\n{separator}")
     print(f"  SILVER MARKET INTELLIGENCE BRIEFING")
     print(f"  {today}")
+    print(f"{separator}")
+    print(f"  SI=F   ${price['price']:.2f}   {sign}{price['change']:.2f}   ({sign}{price['change_pct']:.2f}%)")
     print(f"{separator}\n")
     print(briefing)
     print(f"\n{separator}\n")
 
 
 def main() -> None:
+    print("Fetching live silver price...")
+    price = fetch_silver_price()
     print("Fetching silver news from Google News RSS...")
     articles = fetch_articles()
     print(f"Found {len(articles)} articles. Generating briefing...")
-    briefing = summarize(articles)
-    print_briefing(briefing)
+    briefing = summarize(articles, price)
+    print_briefing(briefing, price)
 
 
 if __name__ == "__main__":
