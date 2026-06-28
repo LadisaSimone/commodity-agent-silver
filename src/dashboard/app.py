@@ -130,45 +130,78 @@ def extract_supply_risk_reason(text: str) -> str:
 
 # ── PDF ───────────────────────────────────────────────────────────────────────
 
-def generate_pdf(briefing: str, silver: dict, gold: dict, briefing_date: str) -> bytes:
-    # Strip URLs before rendering — four passes to handle truncated/malformed output
-    clean = re.sub(r'\[([^\]]+)\]\(https?://[^\)]*\)', r'\1', briefing)   # pass 1: standard [text](url)
-    clean = re.sub(r'\[([^\]]+)\]\(https?://[^\s\)]*', r'\1', clean)      # pass 2: truncated url (no closing paren)
-    clean = re.sub(r'https?://\S+', '', clean)                             # pass 3: bare urls
-    clean = re.sub(r'\(\s*,?\s*\)', '', clean)                             # pass 4a: empty parens ()
-    clean = re.sub(r',\s*\)', ')', clean)                                  # pass 4b: trailing comma before )
+def generate_pdf(
+    briefing: str,
+    silver: dict,
+    gold: dict,
+    briefing_date: str,
+    scores: dict | None = None,
+    dxy: dict | None = None,
+    us10y: dict | None = None,
+) -> bytes:
+    # ── URL stripping (4-pass) ────────────────────────────────────────────────
+    clean = re.sub(r'\[([^\]]+)\]\(https?://[^\)]*\)', r'\1', briefing)
+    clean = re.sub(r'\[([^\]]+)\]\(https?://[^\s\)]*', r'\1', clean)
+    clean = re.sub(r'https?://\S+', '', clean)
+    clean = re.sub(r'\(\s*,?\s*\)', '', clean)
+    clean = re.sub(r',\s*\)', ')', clean)
     briefing = clean
+
+    if scores is None:
+        scores = {}
 
     from reportlab.lib.colors import HexColor
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.lib.units import cm
-    from reportlab.platypus import HRFlowable, SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.platypus import (
+        HRFlowable, SimpleDocTemplate, Paragraph, Spacer,
+        Table, TableStyle, PageBreak,
+    )
 
-    NAVY = HexColor("#1a2f5e")
-    GREEN = HexColor("#1a5e3a")
-    BODY = HexColor("#2c2c2c")
-    GRAY = HexColor("#888888")
+    # ── palette ───────────────────────────────────────────────────────────────
+    NAVY      = HexColor("#1a2f5e")
+    GREEN     = HexColor("#1a5e3a")
+    AMBER     = HexColor("#f0a500")
+    GRAY      = HexColor("#888888")
+    LGRAY     = HexColor("#f5f7fa")
+    BODY      = HexColor("#2c2c2c")
+    DGRAY     = HexColor("#d8d8d8")
+    NAVY_HEX  = "#1a2f5e"
+    GREEN_HEX = "#1a5e3a"
+    AMBER_HEX = "#f0a500"
+    RED_HEX   = "#cc3333"
+    GRAY_HEX  = "#888888"
 
-    margin = 2 * cm
     page_w, _ = A4
+    margin = 2 * cm
+    full_w = page_w - 2 * margin
 
-    def _s(name, **kw):
-        base = dict(fontName="Helvetica", fontSize=10, leading=14, textColor=BODY)
-        base.update(kw)
-        return ParagraphStyle(name, **base)
+    # ── style factory (cached to avoid duplicate names per call) ──────────────
+    _sc: dict = {}
 
-    s_title   = _s("title",    fontName="Helvetica-Bold",    fontSize=20, textColor=NAVY,  leading=24, spaceAfter=3)
-    s_sub     = _s("sub",      fontSize=9,                   textColor=GRAY,  leading=12, spaceAfter=2)
-    s_prices  = _s("prices",   fontName="Helvetica-Bold",    fontSize=9,  textColor=BODY,  leading=13, spaceAfter=0)
-    s_section = _s("section",  fontName="Helvetica-Bold",    fontSize=13, textColor=GREEN, leading=17, spaceBefore=10, spaceAfter=2)
-    s_body    = _s("body",     fontSize=10, textColor=BODY,  leading=14, spaceAfter=2)
-    s_bullet  = _s("bullet",   fontSize=10, textColor=BODY,  leading=14, leftIndent=14, spaceAfter=2)
-    s_lbl     = _s("lbl",      fontName="Helvetica-Bold",    fontSize=10, textColor=NAVY, leading=14)
-    s_rsn     = _s("rsn",      fontName="Helvetica-Oblique", fontSize=9,  textColor=GRAY, leading=13, leftIndent=14, spaceAfter=5)
-    s_story_h = _s("story_h",  fontName="Helvetica-Bold",    fontSize=10, textColor=NAVY, leading=14)
-    s_story_r = _s("story_r",  fontName="Helvetica-Oblique", fontSize=9,  textColor=GRAY, leading=13, leftIndent=14, spaceAfter=6)
+    def _s(name: str, **kw) -> ParagraphStyle:
+        if name not in _sc:
+            base = dict(fontName="Helvetica", fontSize=10, leading=14, textColor=BODY)
+            base.update(kw)
+            _sc[name] = ParagraphStyle(name, **base)
+        return _sc[name]
 
+    s_title   = _s("p_title",   fontName="Helvetica-Bold",    fontSize=20, textColor=NAVY,  leading=24, spaceAfter=3)
+    s_sub     = _s("p_sub",     fontName="Helvetica-Oblique", fontSize=9,  textColor=GRAY,  leading=12, spaceAfter=2)
+    s_body    = _s("p_body",    fontSize=9,  textColor=BODY,  leading=13, spaceAfter=2)
+    s_clbl    = _s("p_clbl",    fontName="Helvetica-Bold",    fontSize=7,  textColor=GRAY,  leading=9)
+    s_cval    = _s("p_cval",    fontName="Helvetica-Bold",    fontSize=13, textColor=NAVY,  leading=15)
+    s_cchg    = _s("p_cchg",    fontName="Helvetica-Bold",    fontSize=8,  leading=10)
+    s_dq      = _s("p_dq",      fontSize=8,  textColor=GRAY,  leading=11)
+    s_verdict = _s("p_verdict", fontName="Helvetica-Oblique", fontSize=9,  textColor=BODY,  leading=13)
+    s_barlbl  = _s("p_barlbl",  fontName="Helvetica-Bold",    fontSize=7,  textColor=GRAY,  leading=9)
+    s_barscr  = _s("p_barscr",  fontName="Helvetica-Bold",    fontSize=8,  leading=10)
+    s_drvrnk  = _s("p_drvrnk",  fontName="Helvetica-Bold",    fontSize=7,  textColor=GRAY,  leading=9)
+    s_drvnm   = _s("p_drvnm",   fontName="Helvetica-Bold",    fontSize=9,  textColor=NAVY,  leading=11)
+    s_drvsub  = _s("p_drvsub",  fontSize=7,  textColor=GRAY,  leading=9)
+
+    # ── utility functions ─────────────────────────────────────────────────────
     def md_to_rl(text: str) -> str:
         text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
@@ -176,113 +209,598 @@ def generate_pdf(briefing: str, silver: dict, gold: dict, briefing_date: str) ->
         text = re.sub(r"[*_`]", "", text)
         return text
 
-    def hr_navy():
-        return HRFlowable(width="100%", thickness=1.5, color=NAVY,  spaceAfter=8, spaceBefore=4)
+    def strip_links(text: str) -> str:
+        return re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
 
-    def hr_green():
-        return HRFlowable(width="100%", thickness=0.5, color=GREEN, spaceAfter=6, spaceBefore=1)
+    def score_hex(v) -> str:
+        try:
+            iv = int(v)
+            if iv >= 7: return GREEN_HEX
+            if iv >= 4: return AMBER_HEX
+            return RED_HEX
+        except (ValueError, TypeError):
+            return GRAY_HEX
+
+    def score_label(v) -> str:
+        try:
+            iv = int(v)
+            if iv >= 7: return "BULLISH"
+            if iv <= 4: return "BEARISH"
+            return "NEUTRAL"
+        except (ValueError, TypeError):
+            return str(v)
+
+    def chg_hex(change: float) -> str:
+        return GREEN_HEX if change >= 0 else RED_HEX
+
+    def chg_arrow(change: float) -> str:
+        return "▲" if change >= 0 else "▼"
 
     def draw_footer(canvas, doc):
         canvas.saveState()
         canvas.setFont("Helvetica", 7.5)
         canvas.setFillColor(GRAY)
-        canvas.drawString(margin, margin * 0.55, "Silver Market Intelligence — Confidential")
-        canvas.drawRightString(page_w - margin, margin * 0.55, f"Page {doc.page}")
+        canvas.setStrokeColor(DGRAY)
+        canvas.setLineWidth(0.3)
+        y = margin * 0.55
+        canvas.line(margin, y + 11, page_w - margin, y + 11)
+        canvas.drawString(margin, y, "Silver Market Intelligence — Confidential")
+        canvas.drawRightString(page_w - margin, y, f"Page {doc.page}")
         canvas.restoreState()
 
-    def parse_score(line: str):
-        m = re.match(
-            r"(Macro|Technicals|Sentiment|Supply\s*Risk|Overall)"
-            r"[:\s]+(\d+/10|LOW|MEDIUM|HIGH)[^—\-]*[—\-]+\s*(.+)",
-            line, re.IGNORECASE,
-        )
-        return (f"{m.group(1).upper()}: {m.group(2)}", m.group(3).strip()) if m else None
+    # ── conviction bar (label | filled bar | score) ───────────────────────────
+    def conviction_bar(label: str, score, bar_w: float = 130) -> Table:
+        try:
+            iv = max(1, min(10, int(score)))
+        except (ValueError, TypeError):
+            iv = 5
+        c_hex = score_hex(iv)
+        filled = bar_w * iv / 10
+        empty  = bar_w - filled
+        inner_bar = Table([["", ""]], colWidths=[filled, empty], rowHeights=[8])
+        inner_bar.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (0, 0), HexColor(c_hex)),
+            ("BACKGROUND",    (1, 0), (1, 0), DGRAY),
+            ("TOPPADDING",    (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
+        ]))
+        lbl_p = Paragraph(label, s_barlbl)
+        scr_p = Paragraph(f'<font color="{c_hex}"><b>{iv}/10</b></font>', s_barscr)
+        row = Table([[lbl_p, inner_bar, scr_p]], colWidths=[80, bar_w, 35], rowHeights=[14])
+        row.setStyle(TableStyle([
+            ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING",    (0, 0), (-1, -1), 1),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 2),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 2),
+        ]))
+        return row
 
+    # ── metrics strip cell ────────────────────────────────────────────────────
+    col5_w = full_w / 5
+
+    def metric_cell(label: str, value: str, change: float, chg_str: str) -> Table:
+        c = chg_hex(change)
+        a = chg_arrow(change)
+        t = Table(
+            [
+                [Paragraph(label, s_clbl)],
+                [Paragraph(value, s_cval)],
+                [Paragraph(f'<font color="{c}">{a} {chg_str}</font>', s_cchg)],
+            ],
+            colWidths=[col5_w - 16],
+        )
+        t.setStyle(TableStyle([
+            ("TOPPADDING",    (0, 0), (-1, -1), 1),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
+        ]))
+        return t
+
+    # ── driver card ───────────────────────────────────────────────────────────
+    col3_w = full_w / 3
+    _RANK_LABELS  = ["#1 PRIMARY", "#2 SECONDARY", "#3 TERTIARY"]
+    _RANK_IMPACTS = ["HIGH", "HIGH", "MEDIUM"]
+
+    def driver_card(rank_idx: int, name: str, stars: str, confidence: str) -> Table:
+        c_hex = GREEN_HEX if confidence.lower() == "high" else (AMBER_HEX if confidence.lower() == "medium" else RED_HEX)
+        star_style = _s(f"p_drvstar{rank_idx}", fontSize=9, textColor=AMBER, leading=11)
+        t = Table(
+            [
+                [Paragraph(_RANK_LABELS[rank_idx], s_drvrnk)],
+                [Paragraph(name[:40], s_drvnm)],
+                [Paragraph(f"Impact: {_RANK_IMPACTS[rank_idx]}", s_drvsub)],
+                [Paragraph(stars or "—", star_style)],
+                [Paragraph(f'<font color="{c_hex}">Confidence: {confidence}</font>', s_drvsub)],
+            ],
+            colWidths=[col3_w - 16],
+        )
+        t.setStyle(TableStyle([
+            ("TOPPADDING",    (0, 0), (-1, -1), 1),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
+        ]))
+        return t
+
+    # ── section splitter ──────────────────────────────────────────────────────
+    _SECTION_ORDER = [
+        "TOP STORIES BY IMPACT",
+        "PRICE ACTION SUMMARY",
+        "RANKED MARKET DRIVERS",
+        "MARKET DRIVERS",
+        "BULL VS BEAR",
+        "SUPPLY RISK MONITOR",
+        "CONVICTION SCORE",
+    ]
+
+    def split_sections(text: str) -> list[tuple[str, str]]:
+        positions = []
+        for name in _SECTION_ORDER:
+            m = re.search(rf"^{re.escape(name)}\s*:?\s*$", text, re.MULTILINE)
+            if m:
+                positions.append((m.start(), m.end(), name))
+        positions.sort()
+        result = []
+        for i, (_, end, name) in enumerate(positions):
+            next_start = positions[i + 1][0] if i + 1 < len(positions) else len(text)
+            body = text[end:next_start]
+            body = re.sub(r"^[\s━─■=\-]+\n", "", body)
+            result.append((name, body.strip()))
+        return result
+
+    def parse_drivers(text: str) -> list[dict]:
+        # Simple name extraction: #N DRIVER NAME (Primary) or #N DRIVER NAME —
+        name_matches = re.findall(r'#\d+\s+([A-Z][A-Z\s/\-&]+?)(?:\s*[—–]|\s*\()', text)
+        if not name_matches:
+            return []
+        # Find section body for stars/confidence lookup
+        sec_m = re.search(r"RANKED MARKET DRIVERS(.*?)(?=━{4,}|\nMARKET DRIVERS\b|\Z)", text, re.DOTALL)
+        section = sec_m.group(1) if sec_m else text
+        drivers: list[dict] = []
+        for i, raw_name in enumerate(name_matches[:3]):
+            name = raw_name.strip()
+            hdr_m = re.search(rf"#{i + 1}\b", section)
+            start = hdr_m.start() if hdr_m else 0
+            ahead = section[start: start + 500]
+            stars_m = re.search(r"(★[★☆]+)", ahead)
+            conf_m  = re.search(r"CONFIDENCE:\s*(High|Medium|Low)", ahead, re.IGNORECASE)
+            drivers.append({
+                "name":       name[:40],
+                "stars":      stars_m.group(1) if stars_m else "",
+                "confidence": conf_m.group(1) if conf_m else "Medium",
+            })
+        return drivers
+
+    def classify_bullet(text: str) -> tuple[str, str]:
+        t = text.lower()
+        if any(k in t for k in ("silver:", "gold:", "dxy:", "us10y:", "rsi", "ratio:", "volatility", "$", "bps")):
+            return NAVY_HEX, "[DATA]"
+        if any(k in t for k in ("support", "resistance", "oversold", "overbought", "moving average")):
+            return "#1a7a7a", "[TECH]"
+        return GRAY_HEX, "[NEWS]"
+
+    # ════════════════════════════════════════════════════════════════════════════
+    # PAGE 1 — EXECUTIVE SUMMARY
+    # ════════════════════════════════════════════════════════════════════════════
+    elems = []
+
+    # Header
+    elems.append(Paragraph("Silver Market Intelligence", s_title))
+    elems.append(Paragraph(f"Daily Briefing — {briefing_date}", s_sub))
+    elems.append(HRFlowable(width="100%", thickness=1.5, color=NAVY, spaceAfter=8, spaceBefore=4))
+
+    # Metrics strip
+    ratio_val  = gold["price"] / silver["price"]
+    ratio_chg  = ratio_val - 65.0
+    _dxy_p     = dxy["price"]              if dxy   else 0.0
+    _dxy_chg   = dxy.get("change", 0.0)    if dxy   else 0.0
+    _dxy_pct   = dxy.get("change_pct", 0.0) if dxy  else 0.0
+    _u10_p     = us10y["price"]            if us10y else 0.0
+    _u10_chg   = us10y.get("change", 0.0)  if us10y else 0.0
+    _u10_bps   = round(_u10_chg * 100)
+
+    metrics_row = [
+        metric_cell("SILVER (SI=F)", f"${silver['price']:.2f}",  silver["change"], f"${silver['change']:+.2f} ({silver['change_pct']:+.2f}%)"),
+        metric_cell("GOLD (GC=F)",   f"${gold['price']:,.2f}",   gold["change"],   f"${gold['change']:+.2f} ({gold['change_pct']:+.2f}%)"),
+        metric_cell("RATIO",         f"{ratio_val:.1f}",          ratio_chg,        f"{ratio_chg:+.1f} vs avg"),
+        metric_cell("DXY",           f"{_dxy_p:.2f}",             _dxy_chg,         f"{_dxy_pct:+.2f}%"),
+        metric_cell("US10Y",         f"{_u10_p:.2f}%",            _u10_chg,         f"{_u10_bps:+d}bps"),
+    ]
+    metrics_tbl = Table([metrics_row], colWidths=[col5_w] * 5, rowHeights=[60])
+    metrics_tbl.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), LGRAY),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+        ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+        ("LINEAFTER",     (0, 0), (3, 0),   0.5, DGRAY),
+    ]))
+    elems.append(metrics_tbl)
+    elems.append(Spacer(1, 0.3 * cm))
+
+    # Significant move banner
+    sig_pct = silver.get("change_pct", 0.0)
+    if abs(sig_pct) >= 2.0:
+        rsi_m = re.search(r"RSI[- ]?(?:14)?[:\s]+([0-9.]+)", briefing, re.IGNORECASE)
+        rsi_val = float(rsi_m.group(1)) if rsi_m else None
+        rsi_tag = ""
+        if rsi_val is not None:
+            rsi_lbl = "OVERSOLD" if rsi_val < 30 else ("OVERBOUGHT" if rsi_val > 70 else "")
+            rsi_tag = f" — RSI {rsi_val:.1f}{' ' + rsi_lbl if rsi_lbl else ''}"
+        sig_sign  = "+" if sig_pct > 0 else ""
+        sig_color = GREEN_HEX if sig_pct > 0 else RED_HEX
+        banner_txt = f"*** SIGNIFICANT MOVE — Silver {sig_sign}{sig_pct:.2f}%{rsi_tag}"
+        banner = Table(
+            [[Paragraph(f'<font color="{sig_color}"><b>{banner_txt}</b></font>', s_body)]],
+            colWidths=[full_w],
+        )
+        banner.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#fffbe6")),
+            ("BOX",           (0, 0), (-1, -1), 1.0, AMBER),
+            ("TOPPADDING",    (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 12),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
+        ]))
+        elems.append(banner)
+        elems.append(Spacer(1, 0.25 * cm))
+
+    # Top 3 Market Drivers
+    elems.append(Paragraph(
+        "<b>Top Market Drivers</b>",
+        _s("p_drvtitle", fontName="Helvetica-Bold", fontSize=10, textColor=NAVY, leading=13, spaceAfter=4),
+    ))
+    drivers = parse_drivers(briefing)
+    while len(drivers) < 3:
+        drivers.append({"name": "—", "stars": "", "confidence": "Medium"})
+
+    drv_cells = [driver_card(i, d["name"], d["stars"], d["confidence"]) for i, d in enumerate(drivers[:3])]
+    drv_tbl = Table([drv_cells], colWidths=[col3_w] * 3, rowHeights=[76])
+    drv_tbl.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), LGRAY),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+        ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+        ("LINEAFTER",     (0, 0), (1, 0),   0.5, DGRAY),
+    ]))
+    elems.append(drv_tbl)
+    elems.append(Spacer(1, 0.3 * cm))
+
+    # Market Snapshot
+    elems.append(Paragraph(
+        "<b>Market Snapshot</b>",
+        _s("p_snaptitle", fontName="Helvetica-Bold", fontSize=10, textColor=NAVY, leading=13, spaceAfter=4),
+    ))
+    reasons = extract_component_reasons(briefing)
+
+    # RSI for technicals snapshot fallback
+    _rsi_brf  = re.search(r"RSI[- ]?(?:14)?[:\s]+([0-9.]+)", briefing, re.IGNORECASE)
+    _rsi_v    = float(_rsi_brf.group(1)) if _rsi_brf else None
+    _rsi_desc = (
+        f"RSI {_rsi_v:.0f} — {'oversold' if _rsi_v < 30 else 'overbought' if _rsi_v > 70 else 'neutral'}"
+        if _rsi_v else "Price momentum signals"
+    )
+    _snap_fallbacks = {
+        "macro":       "Yields and USD direction",
+        "technicals":  _rsi_desc,
+        "supply_risk": "No disruptions detected",
+        "sentiment":   "Based on news flow analysis",
+    }
+
+    def _snap_status(key: str) -> tuple[str, str]:
+        try:
+            iv = int(scores.get(key, 5))
+        except (ValueError, TypeError):
+            iv = 5
+        if iv <= 3: return "BEARISH", RED_HEX
+        if iv <= 6: return "NEUTRAL", AMBER_HEX
+        return "BULLISH", GREEN_HEX
+
+    def _supply_st() -> tuple[str, str]:
+        lvl = str(scores.get("supply_risk", "LOW")).upper()
+        if lvl == "HIGH":   return "HIGH",   RED_HEX
+        if lvl == "MEDIUM": return "MEDIUM", AMBER_HEX
+        return "LOW", GREEN_HEX
+
+    snap_rows_cfg = [
+        ("MACRO",       _snap_status("macro"),      (reasons.get("macro") or _snap_fallbacks["macro"])[:90]),
+        ("TECHNICALS",  _snap_status("technicals"), (reasons.get("technicals") or _snap_fallbacks["technicals"])[:90]),
+        ("SUPPLY RISK", _supply_st(),               (reasons.get("supply_risk") or _snap_fallbacks["supply_risk"])[:90]),
+        ("SENTIMENT",   _snap_status("sentiment"),  (reasons.get("sentiment") or _snap_fallbacks["sentiment"])[:90]),
+    ]
+    snap_data = []
+    for lbl, (status, st_hex), reason in snap_rows_cfg:
+        tag = lbl.replace(" ", "_")
+        snap_data.append([
+            Paragraph(f"<b>{lbl}</b>",                                          _s(f"p_sl_{tag}", fontName="Helvetica-Bold", fontSize=8, textColor=BODY, leading=10)),
+            Paragraph(f'<font color="{st_hex}"><b>{status}</b></font>',         _s(f"p_ss_{tag}", fontName="Helvetica-Bold", fontSize=8, leading=10)),
+            Paragraph(reason or "—",                                            _s(f"p_sr_{tag}", fontSize=7, textColor=GRAY, leading=9)),
+        ])
+    snap_tbl = Table(snap_data, colWidths=[72, 60, full_w - 132], rowHeights=[26] * 4)
+    snap_tbl.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), LGRAY),
+        ("TOPPADDING",    (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEBELOW",     (0, 0), (-1, -2), 0.3, DGRAY),
+    ]))
+    elems.append(snap_tbl)
+    elems.append(Spacer(1, 0.25 * cm))
+
+    # Overall Conviction
+    try:
+        overall = max(1, min(10, int(scores.get("overall", 5))))
+    except (ValueError, TypeError):
+        overall = 5
+    o_hex    = score_hex(overall)
+    o_status = score_label(overall)
+    elems.append(Paragraph(
+        f'<font color="{o_hex}"><b>OVERALL CONVICTION: {overall}/10 — {o_status}</b></font>',
+        _s("p_ovtitle", fontName="Helvetica-Bold", fontSize=10, leading=13, spaceAfter=3),
+    ))
+    elems.append(conviction_bar("Overall", overall, bar_w=200))
+    elems.append(Spacer(1, 0.2 * cm))
+
+    # Data Quality line
+    dq_m = re.search(r"DATA AVAILABILITY[^\n]*\n(.*?)(?=\nMETHODOLOGY|\n━|\Z)", briefing, re.DOTALL)
+    if dq_m:
+        dq_raw        = dq_m.group(1)
+        avail_items   = re.findall(r"✅\s*([^\n]+)", dq_raw)
+        partial_items = re.findall(r"⚠\s*([^\n]+)", dq_raw)
+        missing_items = re.findall(r"❌\s*([^\n]+)", dq_raw)
+        rel_m2 = re.search(r"reliability[^:]*:\s*(\w+)", dq_raw, re.IGNORECASE)
+        rel = rel_m2.group(1) if rel_m2 else "MEDIUM"
+        def _dq_esc(s: str) -> str:
+            return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        avail_str   = " ".join(f'<font color="{GREEN_HEX}">[OK]</font> {_dq_esc(x.split("(")[0].strip())}' for x in avail_items[:5])
+        partial_str = " ".join(f'<font color="{AMBER_HEX}">[!]</font> {_dq_esc(x.split("(")[0].strip())}' for x in partial_items[:2])
+        missing_str = " ".join(f'<font color="{RED_HEX}">[X]</font> {_dq_esc(x.split("(")[0].strip())}' for x in missing_items[:3])
+        dq_line = f"Data Quality: {rel} | {avail_str} {partial_str} {missing_str}"
+    else:
+        dq_line = (
+            f'Data Quality: MEDIUM | <font color="{GREEN_HEX}">[OK]</font> Silver '
+            f'<font color="{GREEN_HEX}">[OK]</font> Gold '
+            f'<font color="{GREEN_HEX}">[OK]</font> Ratio '
+            f'<font color="{AMBER_HEX}">[!]</font> ETF Flows '
+            f'<font color="{RED_HEX}">[X]</font> COT '
+            f'<font color="{RED_HEX}">[X]</font> COMEX'
+        )
+    elems.append(Paragraph(dq_line, s_dq))
+    elems.append(Spacer(1, 0.2 * cm))
+
+    # AI Morning Brief
+    raw_verdict = str(scores.get("verdict", "No briefing summary available."))
+    sentences   = re.split(r'(?<=[.!?])\s+', raw_verdict)
+    verdict_txt = " ".join(sentences[:3])
+    brief_box = Table([[Paragraph(md_to_rl(verdict_txt), s_verdict)]], colWidths=[full_w])
+    brief_box.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#f8f8f8")),
+        ("BOX",           (0, 0), (-1, -1), 0.5, GRAY),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 10),
+    ]))
+    elems.append(brief_box)
+    elems.append(PageBreak())
+
+    # ════════════════════════════════════════════════════════════════════════════
+    # PAGE 2 — DETAILED ANALYSIS (compact, 2-page fit)
+    # ════════════════════════════════════════════════════════════════════════════
+    elems.append(Paragraph(
+        "Detailed Analysis",
+        _s("p_p2h", fontName="Helvetica-Bold", fontSize=13, textColor=NAVY, leading=17, spaceAfter=4),
+    ))
+    elems.append(HRFlowable(width="100%", thickness=1.0, color=NAVY, spaceAfter=6, spaceBefore=2))
+
+    # Compact styles for page 2 (8pt body, 10pt section headers)
+    s_p2_sec  = _s("p_p2sec",  fontName="Helvetica-Bold", fontSize=10, textColor=GREEN, leading=13, spaceBefore=4, spaceAfter=1)
+    s_p2_body = _s("p_p2body", fontSize=8,  textColor=BODY,  leading=11, spaceAfter=1)
+    s_p2_blt  = _s("p_p2blt",  fontSize=8,  textColor=BODY,  leading=11, leftIndent=10, spaceAfter=1)
+    s_p2_lbl  = _s("p_p2lbl",  fontName="Helvetica-Bold", fontSize=8,  textColor=NAVY,  leading=11)
+    s_p2_drv  = _s("p_p2drv",  fontName="Helvetica-Bold", fontSize=9,  textColor=NAVY,  leading=12)
+    s_p2_sub  = _s("p_p2sub",  fontName="Helvetica-Bold", fontSize=8,  textColor=NAVY,  leading=11)
+    s_p2_star = _s("p_p2star", fontSize=9,  textColor=AMBER, leading=11)
+
+    def render_section(name: str, body: str, sec_mode: str = "full") -> list:
+        """Render one briefing section. sec_mode: full | bullets_only | scores_only | one_line | stories"""
+        out: list = []
+        out.append(Spacer(1, 0.15 * cm))
+        out.append(Paragraph(name, s_p2_sec))
+        out.append(HRFlowable(width="100%", thickness=0.4, color=GREEN, spaceAfter=3, spaceBefore=1))
+
+        # one_line: INTERPRETATION line, else first non-empty non-separator line
+        if sec_mode == "one_line":
+            interp_m = re.search(r"INTERPRETATION:\s*(.+?)(?:\n|$)", body, re.IGNORECASE)
+            if interp_m:
+                out.append(Paragraph(md_to_rl(strip_links(interp_m.group(1).strip())), s_p2_body))
+            else:
+                for line in body.splitlines():
+                    s = line.strip()
+                    if s and not re.match(r'^[━─■=\-]{4,}$', s):
+                        out.append(Paragraph(md_to_rl(strip_links(s)), s_p2_body))
+                        break
+            return out
+
+        # stories: numbered items only, max 5
+        if sec_mode == "stories":
+            count = 0
+            for line in body.splitlines():
+                num_m = re.match(r"^(\d+)\.\s+(.+)", line.strip())
+                if num_m and count < 5:
+                    out.append(Paragraph(f"<b>{num_m.group(1)}.</b> {md_to_rl(strip_links(num_m.group(2)))}", s_p2_body))
+                    count += 1
+            return out
+
+        # scores_only: conviction bar lines only
+        if sec_mode == "scores_only":
+            for line in body.splitlines():
+                sc_m = re.match(
+                    r"(Macro|Technicals|Sentiment|ETF Flows|Industrial Demand):\s*(\d+)/10",
+                    line.strip(), re.IGNORECASE,
+                )
+                if sc_m:
+                    out.append(conviction_bar(sc_m.group(1), int(sc_m.group(2)), bar_w=130))
+            return out
+
+        is_conv = (name == "CONVICTION SCORE")
+
+        for line in body.splitlines():
+            stripped = re.sub(r'^#{1,3}\s+', '', line.strip())  # strip markdown headings
+            if not stripped:
+                out.append(Spacer(1, 1))
+                continue
+            if re.match(r'^[━─■=\-]{4,}$', stripped):
+                continue
+
+            # bullets_only mode: pass bullets, case headers, verdict, confidence — skip prose
+            if sec_mode == "bullets_only":
+                if re.match(r"^[-*•]\s", stripped):
+                    content = strip_links(stripped[2:].strip())
+                    lbl_c, lbl_tag = classify_bullet(content)
+                    out.append(Paragraph(
+                        f'<font color="{lbl_c}"><b>{lbl_tag}</b></font> {md_to_rl(content)}',
+                        s_p2_blt,
+                    ))
+                elif re.match(r"^(BULLISH CASE|BEARISH CASE|VERDICT)", stripped, re.IGNORECASE):
+                    out.append(Spacer(1, 2))
+                    out.append(Paragraph(f"<b>{stripped.split()[0] if 'CASE' not in stripped else ' '.join(stripped.split()[:2])}</b>", s_p2_sub))
+                elif (cm2 := re.match(r"CONFIDENCE:\s*(High|Medium|Low)\s*[—–\-]+\s*(.+)", stripped, re.IGNORECASE)):
+                    lvl = cm2.group(1)
+                    c_h = GREEN_HEX if lvl.lower() == "high" else (AMBER_HEX if lvl.lower() == "medium" else RED_HEX)
+                    out.append(Paragraph(
+                        f'<b>CONFIDENCE:</b> <font color="{c_h}"><b>[{lvl.upper()}]</b></font>  {md_to_rl(strip_links(cm2.group(2).strip()))}',
+                        s_p2_body,
+                    ))
+                continue
+
+            # EVIDENCE:
+            if re.match(r"^EVIDENCE:", stripped, re.IGNORECASE):
+                rest = stripped[9:].strip()
+                out.append(Paragraph(
+                    f"<b>EVIDENCE:</b>{' ' + md_to_rl(strip_links(rest)) if rest else ''}",
+                    s_p2_lbl,
+                ))
+                continue
+
+            # INTERPRETATION:
+            if re.match(r"^INTERPRETATION:", stripped, re.IGNORECASE):
+                rest = stripped[15:].strip()
+                out.append(Paragraph(f"<b>INTERPRETATION:</b> {md_to_rl(strip_links(rest))}", s_p2_lbl))
+                continue
+
+            # CONFIDENCE:
+            conf_m = re.match(r"CONFIDENCE:\s*(High|Medium|Low)\s*[—–\-]+\s*(.+)", stripped, re.IGNORECASE)
+            if conf_m:
+                lvl     = conf_m.group(1)
+                rsn_txt = conf_m.group(2).strip()
+                c_hex   = GREEN_HEX if lvl.lower() == "high" else (AMBER_HEX if lvl.lower() == "medium" else RED_HEX)
+                out.append(Paragraph(
+                    f'<b>CONFIDENCE:</b> <font color="{c_hex}"><b>[{lvl.upper()}]</b></font>  {md_to_rl(strip_links(rsn_txt))}',
+                    s_p2_body,
+                ))
+                continue
+
+            # Star ratings
+            if re.search(r'[★☆]{3,}', stripped):
+                out.append(Paragraph(stripped, s_p2_star))
+                continue
+
+            # Conviction bars
+            if is_conv:
+                sc_m = re.match(
+                    r"(Macro|Technicals|Sentiment|ETF Flows|Industrial Demand):\s*(\d+)/10",
+                    stripped, re.IGNORECASE,
+                )
+                if sc_m:
+                    out.append(conviction_bar(sc_m.group(1), int(sc_m.group(2)), bar_w=130))
+                    continue
+
+            # Bullets
+            if re.match(r"^[-*•]\s", stripped):
+                content = strip_links(stripped[2:].strip())
+                lbl_c, lbl_tag = classify_bullet(content)
+                out.append(Paragraph(
+                    f'<font color="{lbl_c}"><b>{lbl_tag}</b></font> {md_to_rl(content)}',
+                    s_p2_blt,
+                ))
+                continue
+
+            # Driver headers
+            if re.match(r"^#\d+\s+[A-Z]", stripped):
+                out.append(Spacer(1, 2))
+                out.append(Paragraph(f"<b>{md_to_rl(stripped)}</b>", s_p2_drv))
+                continue
+
+            # ALL-CAPS sub-headers
+            if re.match(r"^[A-Z][A-Z\s\/]{4,}$", stripped):
+                out.append(Spacer(1, 2))
+                out.append(Paragraph(f"<b>{stripped}</b>", s_p2_sub))
+                continue
+
+            # Numbered items
+            num_m = re.match(r"^(\d+)\.\s+(.+)", stripped)
+            if num_m:
+                out.append(Paragraph(f"<b>{num_m.group(1)}.</b> {md_to_rl(strip_links(num_m.group(2)))}", s_p2_body))
+                continue
+
+            # Key: value
+            kv_m = re.match(r"^([A-Za-z][A-Za-z\s]{2,28}):\s+(.+)", stripped)
+            if kv_m:
+                out.append(Paragraph(
+                    f"<b>{md_to_rl(kv_m.group(1))}:</b> {md_to_rl(strip_links(kv_m.group(2)))}",
+                    s_p2_body,
+                ))
+                continue
+
+            # Default
+            out.append(Paragraph(md_to_rl(strip_links(stripped)), s_p2_body))
+
+        return out
+
+    # Sections to render on page 2 and their render mode
+    _P2_RENDER = {
+        "TOP STORIES BY IMPACT":  "stories",
+        "PRICE ACTION SUMMARY":   "full",
+        "RANKED MARKET DRIVERS":  "full",
+        "BULL VS BEAR":           "bullets_only",
+        "SUPPLY RISK MONITOR":    "one_line",
+        "CONVICTION SCORE":       "scores_only",
+    }
+
+    sections = split_sections(briefing)
+    if len(sections) < 3:
+        # Fallback: strip noise blocks and render full text
+        p2_text = re.sub(
+            r'DATA AVAILABILITY.*?(?=TOP STORIES|PRICE ACTION|\Z)',
+            '', briefing, flags=re.DOTALL | re.IGNORECASE,
+        )
+        p2_text = re.sub(
+            r'METHODOLOGY:.*?(?=TOP STORIES|PRICE ACTION|\Z)',
+            '', p2_text, flags=re.DOTALL | re.IGNORECASE,
+        )
+        elems.extend(render_section("FULL BRIEFING", p2_text))
+    else:
+        for sec_name, sec_body in sections:
+            mode = _P2_RENDER.get(sec_name, "full")
+            elems.extend(render_section(sec_name, sec_body, sec_mode=mode))
+
+    # ── Build ─────────────────────────────────────────────────────────────────
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
         topMargin=margin, bottomMargin=margin * 1.6,
         leftMargin=margin, rightMargin=margin,
     )
-    elems = []
-
-    # ── Title block ───────────────────────────────────────────────────────────
-    elems.append(Paragraph("Silver Market Intelligence", s_title))
-    elems.append(Paragraph(f"Daily Briefing — {briefing_date}", s_sub))
-    elems.append(hr_navy())
-
-    # ── Price strip ───────────────────────────────────────────────────────────
-    ratio = gold["price"] / silver["price"]
-    sign_s = "+" if silver["change"] >= 0 else ""
-    sign_g = "+" if gold["change"] >= 0 else ""
-    elems.append(Paragraph(
-        f"<b>Silver:</b> ${silver['price']:.2f} ({sign_s}{silver['change_pct']:.2f}%)"
-        f"&nbsp;&nbsp;&nbsp;<b>Gold:</b> ${gold['price']:,.2f} ({sign_g}{gold['change_pct']:.2f}%)"
-        f"&nbsp;&nbsp;&nbsp;<b>Au/Ag Ratio:</b> {ratio:.1f}",
-        s_prices,
-    ))
-    elems.append(Spacer(1, 0.35 * cm))
-
-    # ── Line-by-line briefing render ──────────────────────────────────────────
-    for line in briefing.split("\n"):
-        stripped = line.strip()
-
-        if not stripped or stripped == "---":
-            elems.append(Spacer(1, 3))
-            continue
-
-        # Box-drawing / repeated-dash dividers (━━━, ----, ════ etc.) → green HR
-        if re.match(r'^[━─■=\-]{4,}$', stripped):
-            elems.append(HRFlowable(width="100%", thickness=0.5, color=GREEN, spaceAfter=6, spaceBefore=6))
-            continue
-
-        # Markdown link story: "1. [Title](URL) — reason"
-        sm = re.match(r"(\d+)\.\s+\[([^\]]+)\]\(([^)]+)\)\s*[—–\-]+\s*(.+)", stripped)
-        if sm:
-            num, title, url, reason = sm.group(1), sm.group(2), sm.group(3), sm.group(4)
-            safe_url   = url.replace("&", "&amp;")
-            safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            elems.append(Paragraph(
-                f'{num}.&nbsp;&nbsp;<a href="{safe_url}"><font color="#1a2f5e"><b>{safe_title}</b></font></a>',
-                s_story_h,
-            ))
-            elems.append(Paragraph(md_to_rl(reason), s_story_r))
-            continue
-
-        # Markdown headings
-        if stripped.startswith("### "):
-            elems.append(Paragraph(md_to_rl(stripped[4:]), s_section))
-            elems.append(hr_green())
-            continue
-        if stripped.startswith("## ") or stripped.startswith("# "):
-            elems.append(Paragraph(md_to_rl(stripped.lstrip("#").strip()), s_section))
-            elems.append(hr_green())
-            continue
-
-        # ALL-CAPS section header (briefing convention)
-        if re.match(r"^[A-Z][A-Z\s\/]+$", stripped) and len(stripped) >= 8:
-            elems.append(Spacer(1, 4))
-            elems.append(Paragraph(stripped, s_section))
-            elems.append(hr_green())
-            continue
-
-        # Score lines: "Macro: 7/10 — explanation"
-        sc = parse_score(stripped)
-        if sc:
-            elems.append(Paragraph(sc[0], s_lbl))
-            elems.append(Paragraph(md_to_rl(sc[1]), s_rsn))
-            continue
-
-        # Bullet points
-        if re.match(r"^[-*]\s", stripped):
-            cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", stripped[2:])
-            elems.append(Paragraph(f"• {md_to_rl(cleaned)}", s_bullet))
-            continue
-
-        # Body text — strip any remaining markdown links
-        cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", stripped)
-        elems.append(Paragraph(md_to_rl(cleaned), s_body))
-
     doc.build(elems, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return buffer.getvalue()
 
@@ -349,14 +867,24 @@ def parse_story_list(briefing: str) -> list[dict]:
 
 def extract_component_reasons(text: str) -> dict[str, str]:
     result: dict[str, str] = {}
-    for key, pat in [
-        ("macro", r"Macro:\s*\d+/10\s*[—–\-]+\s*(.+)"),
-        ("technicals", r"Technicals:\s*\d+/10\s*[—–\-]+\s*(.+)"),
-        ("sentiment", r"Sentiment:\s*\d+/10\s*[—–\-]+\s*(.+)"),
-        ("supply_risk", r"Risk:\s*(?:LOW|MEDIUM|HIGH)[^\n]*\n([^\n]+)"),
+    for key, hdr_pat in [
+        ("macro",       r"Macro:\s*\d+/10"),
+        ("technicals",  r"Technicals:\s*\d+/10"),
+        ("sentiment",   r"Sentiment:\s*\d+/10"),
+        ("supply_risk", r"Risk:\s*(?:LOW|MEDIUM|HIGH)"),
     ]:
-        m = re.search(pat, text, re.IGNORECASE)
-        result[key] = m.group(1).strip() if m else ""
+        hdr_m = re.search(hdr_pat, text, re.IGNORECASE)
+        if not hdr_m:
+            result[key] = ""
+            continue
+        chunk = text[hdr_m.start(): hdr_m.start() + 600]
+        if key == "supply_risk":
+            sub_m = re.search(r"CONFIDENCE:\s*\w+\s*[—–\-]+\s*(.+?)(?:\n|$)", chunk, re.IGNORECASE)
+            if not sub_m:
+                sub_m = re.search(r"INTERPRETATION:\s*(.+?)(?:\n|$)", chunk, re.IGNORECASE)
+        else:
+            sub_m = re.search(r"INTERPRETATION:\s*(.+?)(?:\n|$)", chunk, re.IGNORECASE)
+        result[key] = sub_m.group(1).strip() if sub_m else ""
     return result
 
 
@@ -743,7 +1271,7 @@ with left_col:
             st.markdown(briefing)
     with _pdf_col:
         if silver is not None:
-            pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "")
+            pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "", scores=scores, dxy=dxy, us10y=us10y)
             st.download_button(
                 "⬇ PDF",
                 data=pdf_bytes,
