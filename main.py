@@ -1,12 +1,20 @@
-from datetime import date
+import json
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-from src.fetchers.price import fetch_silver_price, fetch_gold_price
-from src.fetchers.news import fetch_articles
+from config.settings import MODEL, OUTPUTS_DIR
+from src.analysis.signals import compute_price_signals, compute_data_quality, format_signals_for_prompt
 from src.agents.summarizer import summarize
-from config.settings import OUTPUTS_DIR
+from src.fetchers.news import fetch_articles
+from src.fetchers.price import (
+    fetch_silver_price,
+    fetch_gold_price,
+    fetch_dxy_price,
+    fetch_us10y_price,
+    fetch_silver_history,
+)
 
 load_dotenv()
 
@@ -24,12 +32,49 @@ def _metals_snapshot(silver: dict, gold: dict) -> str:
     )
 
 
-def save_briefing(briefing: str) -> Path:
+def save_outputs(
+    briefing: str,
+    scores: dict,
+    signals: dict,
+    data_quality: dict,
+    articles: list[dict],
+    silver: dict,
+    gold: dict,
+    today: str,
+) -> None:
     out_dir = Path(OUTPUTS_DIR)
     out_dir.mkdir(exist_ok=True)
-    path = out_dir / f"briefing_{date.today().isoformat()}.txt"
-    path.write_text(briefing)
-    return path
+
+    # Structured daily storage
+    daily_dir = out_dir / "daily" / today
+    raw_dir = daily_dir / "raw"
+    briefing_dir = daily_dir / "briefing"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    briefing_dir.mkdir(parents=True, exist_ok=True)
+
+    (raw_dir / "prices.json").write_text(
+        json.dumps({"silver": silver, "gold": gold}, indent=2)
+    )
+    (raw_dir / "news.json").write_text(json.dumps(articles, indent=2))
+    (raw_dir / "signals.json").write_text(json.dumps(signals, indent=2))
+
+    (briefing_dir / "briefing.txt").write_text(briefing)
+    (briefing_dir / "scores.json").write_text(json.dumps(scores, indent=2))
+
+    metadata = {
+        "date": today,
+        "run_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "model": MODEL,
+        "articles_fetched": len(articles),
+        "significant_move": signals["silver"]["significant_move"],
+        "silver_change_pct": signals["silver"]["change_pct"],
+        "data_reliability": data_quality["reliability"],
+    }
+    (daily_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
+
+    # Flat backward-compat files for the dashboard
+    (out_dir / f"briefing_{today}.txt").write_text(briefing)
+    (out_dir / f"scores_{today}.json").write_text(json.dumps(scores, indent=2))
 
 
 def print_briefing(briefing: str, silver: dict, gold: dict) -> None:
@@ -50,14 +95,37 @@ def main() -> None:
     print("Fetching live metals prices...")
     silver = fetch_silver_price()
     gold = fetch_gold_price()
-    print("Fetching silver news from Google News RSS...")
+    dxy = fetch_dxy_price()
+    us10y = fetch_us10y_price()
+
+    print("Fetching 30-day price history...")
+    history = fetch_silver_history(30)
+
+    print("Fetching silver news...")
     articles = fetch_articles()
+
+    print("Computing quantitative signals...")
+    signals = compute_price_signals(silver, gold, dxy, us10y, history)
+    data_quality = compute_data_quality(silver, gold, dxy, us10y)
+    signals_text = format_signals_for_prompt(signals, data_quality)
+
     print(f"Found {len(articles)} articles. Generating briefing...")
-    briefing, scores = summarize(articles, silver, gold)
+    briefing, scores = summarize(
+        articles,
+        silver,
+        gold,
+        dxy,
+        us10y,
+        signals_text=signals_text,
+        data_quality=data_quality,
+    )
+
     print_briefing(briefing, silver, gold)
     print("Scores:", scores)
-    path = save_briefing(briefing)
-    print(f"Briefing saved to {path}")
+
+    today = date.today().isoformat()
+    save_outputs(briefing, scores, signals, data_quality, articles, silver, gold, today)
+    print(f"Outputs saved to {OUTPUTS_DIR}/daily/{today}/ (+ flat compat files)")
 
 
 if __name__ == "__main__":

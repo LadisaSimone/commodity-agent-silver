@@ -131,69 +131,154 @@ def extract_supply_risk_reason(text: str) -> str:
 # ── PDF ───────────────────────────────────────────────────────────────────────
 
 def generate_pdf(briefing: str, silver: dict, gold: dict, briefing_date: str) -> bytes:
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.lib.units import inch
+    # Strip all markdown links before rendering so no raw URLs leak into the PDF
+    briefing = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', briefing)
+
+    from reportlab.lib.colors import HexColor
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import cm
     from reportlab.platypus import HRFlowable, SimpleDocTemplate, Paragraph, Spacer
 
+    NAVY = HexColor("#1a2f5e")
+    GREEN = HexColor("#1a5e3a")
+    BODY = HexColor("#2c2c2c")
+    GRAY = HexColor("#888888")
+
+    margin = 2 * cm
+    page_w, _ = A4
+
+    def _s(name, **kw):
+        base = dict(fontName="Helvetica", fontSize=10, leading=14, textColor=BODY)
+        base.update(kw)
+        return ParagraphStyle(name, **base)
+
+    s_title   = _s("title",    fontName="Helvetica-Bold",    fontSize=20, textColor=NAVY,  leading=24, spaceAfter=3)
+    s_sub     = _s("sub",      fontSize=9,                   textColor=GRAY,  leading=12, spaceAfter=2)
+    s_prices  = _s("prices",   fontName="Helvetica-Bold",    fontSize=9,  textColor=BODY,  leading=13, spaceAfter=0)
+    s_section = _s("section",  fontName="Helvetica-Bold",    fontSize=13, textColor=GREEN, leading=17, spaceBefore=10, spaceAfter=2)
+    s_body    = _s("body",     fontSize=10, textColor=BODY,  leading=14, spaceAfter=2)
+    s_bullet  = _s("bullet",   fontSize=10, textColor=BODY,  leading=14, leftIndent=14, spaceAfter=2)
+    s_lbl     = _s("lbl",      fontName="Helvetica-Bold",    fontSize=10, textColor=NAVY, leading=14)
+    s_rsn     = _s("rsn",      fontName="Helvetica-Oblique", fontSize=9,  textColor=GRAY, leading=13, leftIndent=14, spaceAfter=5)
+    s_story_h = _s("story_h",  fontName="Helvetica-Bold",    fontSize=10, textColor=NAVY, leading=14)
+    s_story_r = _s("story_r",  fontName="Helvetica-Oblique", fontSize=9,  textColor=GRAY, leading=13, leftIndent=14, spaceAfter=6)
+
     def md_to_rl(text: str) -> str:
+        text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
-        text = re.sub(r"\*(.+?)\*", r"<i>\1</i>", text)
+        text = re.sub(r"\*(.+?)\*",     r"<i>\1</i>", text)
         text = re.sub(r"[*_`]", "", text)
         return text
 
+    def hr_navy():
+        return HRFlowable(width="100%", thickness=1.5, color=NAVY,  spaceAfter=8, spaceBefore=4)
+
+    def hr_green():
+        return HRFlowable(width="100%", thickness=0.5, color=GREEN, spaceAfter=6, spaceBefore=1)
+
+    def draw_footer(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica", 7.5)
+        canvas.setFillColor(GRAY)
+        canvas.drawString(margin, margin * 0.55, "Silver Market Intelligence — Confidential")
+        canvas.drawRightString(page_w - margin, margin * 0.55, f"Page {doc.page}")
+        canvas.restoreState()
+
+    def parse_score(line: str):
+        m = re.match(
+            r"(Macro|Technicals|Sentiment|Supply\s*Risk|Overall)"
+            r"[:\s]+(\d+/10|LOW|MEDIUM|HIGH)[^—\-]*[—\-]+\s*(.+)",
+            line, re.IGNORECASE,
+        )
+        return (f"{m.group(1).upper()}: {m.group(2)}", m.group(3).strip()) if m else None
+
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
-        buffer, pagesize=letter,
-        topMargin=0.75 * inch, bottomMargin=0.75 * inch,
-        leftMargin=inch, rightMargin=inch,
+        buffer, pagesize=A4,
+        topMargin=margin, bottomMargin=margin * 1.6,
+        leftMargin=margin, rightMargin=margin,
     )
-    styles = getSampleStyleSheet()
-    story = []
+    elems = []
 
-    story.append(Paragraph("Silver Market Intelligence Briefing", styles["h1"]))
-    story.append(Paragraph(briefing_date, styles["Normal"]))
-    story.append(Spacer(1, 6))
+    # ── Title block ───────────────────────────────────────────────────────────
+    elems.append(Paragraph("Silver Market Intelligence", s_title))
+    elems.append(Paragraph(f"Daily Briefing — {briefing_date}", s_sub))
+    elems.append(hr_navy())
 
+    # ── Price strip ───────────────────────────────────────────────────────────
     ratio = gold["price"] / silver["price"]
     sign_s = "+" if silver["change"] >= 0 else ""
     sign_g = "+" if gold["change"] >= 0 else ""
-    story.append(Paragraph(
-        f"Silver: ${silver['price']:.2f} ({sign_s}{silver['change_pct']:.2f}%)  |  "
-        f"Gold: ${gold['price']:,.2f} ({sign_g}{gold['change_pct']:.2f}%)  |  "
-        f"Ratio: {ratio:.1f}",
-        styles["Normal"],
+    elems.append(Paragraph(
+        f"<b>Silver:</b> ${silver['price']:.2f} ({sign_s}{silver['change_pct']:.2f}%)"
+        f"&nbsp;&nbsp;&nbsp;<b>Gold:</b> ${gold['price']:,.2f} ({sign_g}{gold['change_pct']:.2f}%)"
+        f"&nbsp;&nbsp;&nbsp;<b>Au/Ag Ratio:</b> {ratio:.1f}",
+        s_prices,
     ))
-    story.append(Spacer(1, 0.2 * inch))
+    elems.append(Spacer(1, 0.35 * cm))
 
-    hr = lambda: HRFlowable(width="100%", thickness=0.5, color=colors.grey, spaceAfter=4)
-
+    # ── Line-by-line briefing render ──────────────────────────────────────────
     for line in briefing.split("\n"):
         stripped = line.strip()
-        if not stripped:
-            story.append(Spacer(1, 4))
-        elif stripped == "---":
-            story.append(hr())
-        elif stripped.startswith("### "):
-            story.append(Spacer(1, 6))
-            story.append(Paragraph(md_to_rl(stripped[4:]), styles["h3"]))
-        elif stripped.startswith("## "):
-            story.append(Spacer(1, 8))
-            story.append(Paragraph(md_to_rl(stripped[3:]), styles["h2"]))
-        elif stripped.startswith("# "):
-            story.append(Spacer(1, 8))
-            story.append(Paragraph(md_to_rl(stripped[2:]), styles["h1"]))
-        elif re.match(r"^[A-Z][A-Z\s\/]+$", stripped) and len(stripped) >= 8:
-            story.append(Spacer(1, 10))
-            story.append(hr())
-            story.append(Paragraph(stripped, styles["h2"]))
-        elif re.match(r"^[-*]\s", stripped):
-            story.append(Paragraph(f"• {md_to_rl(stripped[2:])}", styles["Normal"]))
-        else:
-            story.append(Paragraph(md_to_rl(stripped), styles["Normal"]))
 
-    doc.build(story)
+        if not stripped or stripped == "---":
+            elems.append(Spacer(1, 3))
+            continue
+
+        # Box-drawing / repeated-dash dividers (━━━, ----, ════ etc.) → green HR
+        if re.match(r'^[━─■=\-]{4,}$', stripped):
+            elems.append(HRFlowable(width="100%", thickness=0.5, color=GREEN, spaceAfter=6, spaceBefore=6))
+            continue
+
+        # Markdown link story: "1. [Title](URL) — reason"
+        sm = re.match(r"(\d+)\.\s+\[([^\]]+)\]\(([^)]+)\)\s*[—–\-]+\s*(.+)", stripped)
+        if sm:
+            num, title, url, reason = sm.group(1), sm.group(2), sm.group(3), sm.group(4)
+            safe_url   = url.replace("&", "&amp;")
+            safe_title = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            elems.append(Paragraph(
+                f'{num}.&nbsp;&nbsp;<a href="{safe_url}"><font color="#1a2f5e"><b>{safe_title}</b></font></a>',
+                s_story_h,
+            ))
+            elems.append(Paragraph(md_to_rl(reason), s_story_r))
+            continue
+
+        # Markdown headings
+        if stripped.startswith("### "):
+            elems.append(Paragraph(md_to_rl(stripped[4:]), s_section))
+            elems.append(hr_green())
+            continue
+        if stripped.startswith("## ") or stripped.startswith("# "):
+            elems.append(Paragraph(md_to_rl(stripped.lstrip("#").strip()), s_section))
+            elems.append(hr_green())
+            continue
+
+        # ALL-CAPS section header (briefing convention)
+        if re.match(r"^[A-Z][A-Z\s\/]+$", stripped) and len(stripped) >= 8:
+            elems.append(Spacer(1, 4))
+            elems.append(Paragraph(stripped, s_section))
+            elems.append(hr_green())
+            continue
+
+        # Score lines: "Macro: 7/10 — explanation"
+        sc = parse_score(stripped)
+        if sc:
+            elems.append(Paragraph(sc[0], s_lbl))
+            elems.append(Paragraph(md_to_rl(sc[1]), s_rsn))
+            continue
+
+        # Bullet points
+        if re.match(r"^[-*]\s", stripped):
+            cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", stripped[2:])
+            elems.append(Paragraph(f"• {md_to_rl(cleaned)}", s_bullet))
+            continue
+
+        # Body text — strip any remaining markdown links
+        cleaned = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", stripped)
+        elems.append(Paragraph(md_to_rl(cleaned), s_body))
+
+    doc.build(elems, onFirstPage=draw_footer, onLaterPages=draw_footer)
     return buffer.getvalue()
 
 
@@ -464,43 +549,26 @@ with st.sidebar:
 
 # ── header row ────────────────────────────────────────────────────────────────
 
-hdr_col, btn_col = st.columns([8, 1])
-with hdr_col:
-    st.markdown(
-        '<div style="padding:10px 0 4px;">'
-        '<span style="font-size:1.35rem;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">'
-        '🪙 Silver Market Intelligence</span>'
-        '<span style="font-size:0.72rem;color:#4a5a72;margin-left:12px;">Bloomberg-style AI briefing</span>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-    _now = datetime.now()
-    _date_label = _now.strftime(f"%A, %B {_now.day}, %Y")
-    st.markdown(
-        '<h1 style="color:#ffffff;font-size:1.6rem;font-weight:800;margin:2px 0 2px;'
-        'letter-spacing:-0.02em;line-height:1.2;">Silver Market Overview</h1>'
-        f'<div style="font-size:0.82rem;color:#4a5a72;margin-bottom:6px;">{_date_label}</div>',
-        unsafe_allow_html=True,
-    )
-with btn_col:
-    refresh = st.button("↻ Refresh", type="primary", use_container_width=True)
+_now = datetime.now()
+_date_label = _now.strftime(f"%A, %B {_now.day}, %Y")
+st.markdown(
+    '<h1 style="color:#ffffff;font-size:1.6rem;font-weight:800;margin:2px 0 2px;'
+    'letter-spacing:-0.02em;line-height:1.2;">Silver Market Overview</h1>'
+    f'<div style="font-size:0.82rem;color:#4a5a72;margin-bottom:6px;">{_date_label}</div>',
+    unsafe_allow_html=True,
+)
 
 st.divider()
 
 # ── load / generate briefing ──────────────────────────────────────────────────
 
-if refresh:
-    with st.spinner("Fetching prices, news, and generating briefing…"):
-        briefing, scores, silver, gold, dxy, us10y, history = run_and_save()
-    briefing_date = date.today().isoformat()
+briefing, briefing_date, scores = load_latest_briefing()
+_prices = load_latest_prices()
+if _prices is not None:
+    silver, gold, dxy, us10y = _prices
 else:
-    briefing, briefing_date, scores = load_latest_briefing()
-    _prices = load_latest_prices()
-    if _prices is not None:
-        silver, gold, dxy, us10y = _prices
-    else:
-        silver = gold = dxy = us10y = None
-    history = load_latest_history()
+    silver = gold = dxy = us10y = None
+history = load_latest_history()
 
 last_updated_slot.markdown(
     f'<div style="font-size:0.7rem;color:#4a5a72;">Last updated<br>'
@@ -509,7 +577,7 @@ last_updated_slot.markdown(
 )
 
 if not briefing:
-    st.info("Click **↻ Refresh** to generate your first briefing.")
+    st.info("No briefing available. Run the backend to generate one.")
     st.stop()
 
 # ── price strip ───────────────────────────────────────────────────────────────
@@ -664,10 +732,20 @@ with left_col:
         '</div>',
         unsafe_allow_html=True,
     )
-    st.markdown(
-        '<a href="#" style="color:#5a6a7e;font-size:0.8rem;">View full analysis →</a>',
-        unsafe_allow_html=True,
-    )
+    _exp_col, _pdf_col = st.columns([4, 1])
+    with _exp_col:
+        with st.expander("View full analysis"):
+            st.markdown(briefing)
+    with _pdf_col:
+        if silver is not None:
+            pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "")
+            st.download_button(
+                "⬇ PDF",
+                data=pdf_bytes,
+                file_name=f"silver_briefing_{briefing_date}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
 
 with right_col:
     # ── market snapshot card ──────────────────────────────────────────────────
@@ -777,22 +855,10 @@ with right_col:
 # ── footer ────────────────────────────────────────────────────────────────────
 
 st.divider()
-foot_left, foot_right = st.columns([3, 1])
-with foot_left:
-    st.markdown(
-        f'<div style="font-size:0.72rem;color:#2d3f5a;">'
-        f'Briefing date: {briefing_date or "—"}&nbsp;&nbsp;|&nbsp;&nbsp;'
-        f'Data: Yahoo Finance (SI=F, GC=F, DXY, US10Y) &amp; Google News RSS'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
-with foot_right:
-    if silver is not None:
-        pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "")
-        st.download_button(
-            "⬇ PDF",
-            data=pdf_bytes,
-            file_name=f"silver_briefing_{briefing_date}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
+st.markdown(
+    f'<div style="font-size:0.72rem;color:#2d3f5a;">'
+    f'Briefing date: {briefing_date or "—"}&nbsp;&nbsp;|&nbsp;&nbsp;'
+    f'Data: Yahoo Finance (SI=F, GC=F, DXY, US10Y) &amp; Google News RSS'
+    f'</div>',
+    unsafe_allow_html=True,
+)

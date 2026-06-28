@@ -9,28 +9,78 @@ _PROMPT_TEMPLATE = (
     Path(__file__).parent.parent.parent / "prompts" / "briefing.txt"
 ).read_text()
 
-
-def _fmt(p: dict) -> str:
-    sign = "+" if p["change"] >= 0 else ""
-    return f"${p['price']:.2f}  {sign}{p['change']:.2f} ({sign}{p['change_pct']:.2f}%)"
-
-
 _DEFAULT_SCORES = {
     "macro": 5, "technicals": 5, "sentiment": 5,
     "etf_flows": 5, "industrial_demand": 5,
     "overall": 5, "verdict": "No conviction data available.", "supply_risk": "LOW",
 }
 
+_AVAILABLE_LABELS = {
+    "silver_price": "Silver spot price & daily change",
+    "gold_price": "Gold spot price & daily change",
+    "ratio": "Gold/Silver Ratio",
+    "dxy": "DXY (US Dollar Index)",
+    "us10y": "US 10Y Yield",
+    "rsi_14": "RSI-14 (computed from 30d history)",
+    "volatility": "Volatility (30d annualized, computed)",
+}
+_PARTIAL_LABELS = {
+    "etf_flows_proxy": "ETF Flow Data (SLV volume proxy only — not actual fund flows)",
+}
+_MISSING_LABELS = {
+    "slv_actual_flows": "SLV Actual Flows (not available)",
+    "comex_inventory": "COMEX Inventories (not available)",
+    "cot_positioning": "COT Positioning (not available)",
+    "open_interest": "Open Interest & Volume (not available)",
+    "real_yields": "Real Yields (derived estimate only)",
+}
+
+
+def _format_data_quality_block(data_quality: dict, today: str) -> str:
+    lines = [f"DATA AVAILABILITY — {today}"]
+    for k in data_quality.get("available", []):
+        lines.append(f"✅ {_AVAILABLE_LABELS.get(k, k)}")
+    for k in data_quality.get("partial", []):
+        lines.append(f"⚠ {_PARTIAL_LABELS.get(k, k)}")
+    for k in data_quality.get("missing", []):
+        lines.append(f"❌ {_MISSING_LABELS.get(k, k)}")
+    lines.append("")
+    reliability = data_quality.get("reliability", "MEDIUM")
+    reason = data_quality.get("reliability_reason", "Core price data available").lower()
+    lines.append(f"Analysis reliability today: {reliability} — {reason}")
+    return "\n".join(lines)
+
+
+def _build_fallback_signals(silver: dict, gold: dict, dxy: dict | None, us10y: dict | None) -> str:
+    """Minimal signals text for callers that don't pass a pre-computed signals block."""
+    def _sign(v: float) -> str:
+        return "+" if v >= 0 else ""
+
+    ratio = gold["price"] / silver["price"]
+    lines = [
+        "QUANTITATIVE SIGNALS (pre-computed)",
+        f"Silver: ${silver['price']:.2f} | {_sign(silver['change_pct'])}{silver['change_pct']:.2f}%",
+        f"Gold: ${gold['price']:.2f} | {_sign(gold['change_pct'])}{gold['change_pct']:.2f}%",
+        f"Ratio: {ratio:.1f}",
+    ]
+    if dxy and dxy.get("price"):
+        lines.append(
+            f"DXY: {dxy['price']:.2f} | {_sign(dxy['change_pct'])}{dxy['change_pct']:.2f}%"
+        )
+    if us10y and us10y.get("price"):
+        lines.append(
+            f"US10Y: {us10y['price']:.2f}% | {_sign(us10y['change_pct'])}{us10y['change_pct']:.2f}%"
+        )
+    return "\n".join(lines)
+
 
 def extract_scores(briefing_text: str) -> tuple[str, dict]:
     lines = briefing_text.splitlines()
-    # Search the last 10 lines for the JSON block (Claude may pad with whitespace)
     search_start = max(0, len(lines) - 10)
     for i in range(len(lines) - 1, search_start - 1, -1):
         line = lines[i].strip()
         if '"conviction"' in line and line:
             try:
-                # Handle any leading/trailing text around the JSON object
                 json_start = line.index("{")
                 data = json.loads(line[json_start:])
                 scores = {**_DEFAULT_SCORES, **data.get("conviction", {})}
@@ -47,41 +97,21 @@ def summarize(
     gold: dict,
     dxy: dict | None = None,
     us10y: dict | None = None,
-    significant_move: bool = False,
+    signals_text: str | None = None,
+    data_quality: dict | None = None,
 ) -> tuple[str, dict]:
     client = anthropic.Anthropic()
     today = date.today().strftime("%B %d, %Y")
 
-    def _sign(v: float) -> str:
-        return "+" if v >= 0 else ""
-
-    ratio = gold["price"] / silver["price"]
-    metals_snapshot = (
-        f"Silver (SI=F): {_fmt(silver)}\n"
-        f"Gold   (GC=F): {_fmt(gold)}\n"
-        f"Gold/Silver Ratio: {ratio:.1f}"
+    quantitative_signals = signals_text or _build_fallback_signals(
+        silver, gold, dxy, us10y
     )
-    if dxy and dxy["price"]:
-        metals_snapshot += (
-            f"\nDXY (Dollar Index): {dxy['price']:.2f}"
-            f"  {_sign(dxy['change'])}{dxy['change']:.2f}"
-            f" ({_sign(dxy['change_pct'])}{dxy['change_pct']:.2f}%)"
-        )
-    if us10y and us10y["price"]:
-        metals_snapshot += (
-            f"\nUS 10Y Yield: {us10y['price']:.2f}%"
-            f"  {_sign(us10y['change'])}{us10y['change']:.3f}"
-            f" ({_sign(us10y['change_pct'])}{us10y['change_pct']:.2f}%)"
-        )
 
-    significant_move_context = ""
-    if significant_move:
-        sign = _sign(silver["change_pct"])
-        significant_move_context = (
-            f"\nNOTE: Silver is experiencing a significant intraday move "
-            f"({sign}{silver['change_pct']:.2f}%). "
-            f"Prioritize explaining the key drivers behind this move in your analysis."
-        )
+    data_quality_block = (
+        _format_data_quality_block(data_quality, today)
+        if data_quality is not None
+        else f"DATA AVAILABILITY — {today}\n✅ Silver spot price & daily change\n✅ Gold spot price & daily change\n✅ Gold/Silver Ratio\n\nAnalysis reliability today: MEDIUM"
+    )
 
     articles_text = "\n\n".join(
         f"Title: {a['title']}\nDate: {a['date']}\nURL: {a.get('url', '')}\nSummary: {a['description']}"
@@ -90,8 +120,8 @@ def summarize(
 
     prompt = _PROMPT_TEMPLATE.format(
         today=today,
-        metals_snapshot=metals_snapshot,
-        significant_move_context=significant_move_context,
+        quantitative_signals=quantitative_signals,
+        data_quality=data_quality_block,
         articles_text=articles_text,
     )
 
