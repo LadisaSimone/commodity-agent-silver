@@ -1,5 +1,7 @@
 import anthropic
 import json
+import re
+import time
 from datetime import date
 from pathlib import Path
 
@@ -34,6 +36,12 @@ _MISSING_LABELS = {
     "open_interest": "Open Interest & Volume (not available)",
     "real_yields": "Real Yields (derived estimate only)",
 }
+
+
+def strip_urls(text: str) -> str:
+    text = re.sub(r'\[([^\]]+)\]\(https?://[^\)]+\)', r'\1', text)
+    text = re.sub(r'https?://\S+', '', text)
+    return text
 
 
 def _format_data_quality_block(data_quality: dict, today: str) -> str:
@@ -113,10 +121,10 @@ def summarize(
         else f"DATA AVAILABILITY — {today}\n✅ Silver spot price & daily change\n✅ Gold spot price & daily change\n✅ Gold/Silver Ratio\n\nAnalysis reliability today: MEDIUM"
     )
 
-    articles_text = "\n\n".join(
-        f"Title: {a['title']}\nDate: {a['date']}\nURL: {a.get('url', '')}\nSummary: {a['description']}"
+    articles_text = strip_urls("\n\n".join(
+        f"Title: {a['title']}\nDate: {a['date']}\nSource: {a.get('url', '')}\nSummary: {a['description']}"
         for a in articles
-    )
+    ))
 
     prompt = _PROMPT_TEMPLATE.format(
         today=today,
@@ -125,10 +133,22 @@ def summarize(
         articles_text=articles_text,
     )
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model=MODEL,
+                max_tokens=MAX_TOKENS,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=120.0,
+            )
+            break
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait = 2 ** attempt
+                print(f"API error (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
     return extract_scores(response.content[0].text)

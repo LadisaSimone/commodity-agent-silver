@@ -89,6 +89,10 @@ def run_and_save() -> tuple[str, dict, dict, dict, dict, dict, list[dict]]:
 
 # ── text helpers ──────────────────────────────────────────────────────────────
 
+def escape_dollars(text: str) -> str:
+    return text.replace('$', r'\$')
+
+
 def add_section_dividers(text: str) -> str:
     lines = text.splitlines()
     result = []
@@ -352,28 +356,16 @@ def generate_pdf(
             result.append((name, body.strip()))
         return result
 
-    def parse_drivers(text: str) -> list[dict]:
-        # Simple name extraction: #N DRIVER NAME (Primary) or #N DRIVER NAME —
-        name_matches = re.findall(r'#\d+\s+([A-Z][A-Z\s/\-&]+?)(?:\s*[—–]|\s*\()', text)
-        if not name_matches:
-            return []
-        # Find section body for stars/confidence lookup
-        sec_m = re.search(r"RANKED MARKET DRIVERS(.*?)(?=━{4,}|\nMARKET DRIVERS\b|\Z)", text, re.DOTALL)
-        section = sec_m.group(1) if sec_m else text
-        drivers: list[dict] = []
-        for i, raw_name in enumerate(name_matches[:3]):
-            name = raw_name.strip()
-            hdr_m = re.search(rf"#{i + 1}\b", section)
-            start = hdr_m.start() if hdr_m else 0
-            ahead = section[start: start + 500]
-            stars_m = re.search(r"(★[★☆]+)", ahead)
-            conf_m  = re.search(r"CONFIDENCE:\s*(High|Medium|Low)", ahead, re.IGNORECASE)
-            drivers.append({
-                "name":       name[:40],
-                "stars":      stars_m.group(1) if stars_m else "",
-                "confidence": conf_m.group(1) if conf_m else "Medium",
-            })
-        return drivers
+    def parse_drivers(briefing: str) -> list[str]:
+        matches = re.findall(r'#\d+\s+(.*?)(?=\n)', briefing)
+        drivers = []
+        for m in matches:
+            name = re.sub(r'\s*[\-—–(].*$', '', m).strip()
+            if name and len(name) > 3:
+                drivers.append(name)
+        while len(drivers) < 3:
+            drivers.append("—")
+        return drivers[:3]
 
     def classify_bullet(text: str) -> tuple[str, str]:
         t = text.lower()
@@ -455,11 +447,9 @@ def generate_pdf(
         "<b>Top Market Drivers</b>",
         _s("p_drvtitle", fontName="Helvetica-Bold", fontSize=10, textColor=NAVY, leading=13, spaceAfter=4),
     ))
-    drivers = parse_drivers(briefing)
-    while len(drivers) < 3:
-        drivers.append({"name": "—", "stars": "", "confidence": "Medium"})
+    drivers = parse_drivers(briefing)  # returns list[str], already padded to 3
 
-    drv_cells = [driver_card(i, d["name"], d["stars"], d["confidence"]) for i, d in enumerate(drivers[:3])]
+    drv_cells = [driver_card(i, name, "", "Medium") for i, name in enumerate(drivers)]
     drv_tbl = Table([drv_cells], colWidths=[col3_w] * 3, rowHeights=[76])
     drv_tbl.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, -1), LGRAY),
@@ -537,10 +527,7 @@ def generate_pdf(
     elems.append(Spacer(1, 0.25 * cm))
 
     # Overall Conviction
-    try:
-        overall = max(1, min(10, int(scores.get("overall", 5))))
-    except (ValueError, TypeError):
-        overall = 5
+    overall = int(scores.get("overall", 5)) if scores else 5
     o_hex    = score_hex(overall)
     o_status = score_label(overall)
     elems.append(Paragraph(
@@ -578,9 +565,10 @@ def generate_pdf(
     elems.append(Spacer(1, 0.2 * cm))
 
     # AI Morning Brief
-    raw_verdict = str(scores.get("verdict", "No briefing summary available."))
-    sentences   = re.split(r'(?<=[.!?])\s+', raw_verdict)
-    verdict_txt = " ".join(sentences[:3])
+    verdict      = scores.get("verdict", "") if scores else ""
+    morning_brief = verdict if verdict else "Analysis generated from quantitative signals and news flow."
+    sentences    = re.split(r'(?<=[.!?])\s+', morning_brief)
+    verdict_txt  = " ".join(sentences[:3])
     brief_box = Table([[Paragraph(md_to_rl(verdict_txt), s_verdict)]], colWidths=[full_w])
     brief_box.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, -1), HexColor("#f8f8f8")),
@@ -933,6 +921,25 @@ h1, h2, h3, h4 { color: #ffffff !important; }
 p, li, .stMarkdown p { color: #8a9ab5 !important; }
 label { color: #5a6a7e !important; }
 
+/* Full briefing expander styling */
+.briefing-content h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a2f5e;
+    margin-top: 1.5rem;
+    border-bottom: 2px solid #1a5e3a;
+    padding-bottom: 4px;
+}
+.briefing-content h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a2f5e;
+    margin-top: 1rem;
+}
+.briefing-content strong {
+    color: #1a2f5e;
+}
+
 /* dividers */
 hr { border-color: #1a2035 !important; margin: 0.3rem 0 !important; }
 
@@ -967,13 +974,18 @@ button[kind="secondary"] {
 }
 
 /* download button */
-[data-testid="stDownloadButton"] button {
-    background-color: #132040 !important;
-    color: #7aa8e0 !important;
-    border: 1px solid #1e3460 !important;
+div[data-testid="stDownloadButton"] button {
+    background-color: #1a2f5e !important;
+    color: white !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
-    border-radius: 3px !important;
-    font-size: 0.82rem !important;
+    padding: 12px 24px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    width: 100% !important;
+}
+div[data-testid="stDownloadButton"] button:hover {
+    background-color: #1a5e3a !important;
 }
 
 /* form submit */
@@ -1248,38 +1260,6 @@ with left_col:
         unsafe_allow_html=True,
     )
 
-    # ── AI morning brief card ─────────────────────────────────────────────────
-    verdict = scores.get("verdict", "")
-    st.markdown(
-        '<div style="background:#0d1117;border:1px solid #1a2035;border-radius:6px;'
-        'padding:18px 20px;">'
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">'
-        '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
-        'letter-spacing:0.09em;">AI Morning Brief</div>'
-        '<span style="font-size:0.7rem;color:#2d3f5a;cursor:help;" '
-        'title="Generated by Claude AI from today\'s market data and news">(?)</span>'
-        '</div>'
-        f'<div style="font-size:0.85rem;color:#8a9ab5;line-height:1.65;">'
-        f'{verdict if verdict else "No briefing summary available."}'
-        f'</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-    _exp_col, _pdf_col = st.columns([4, 1])
-    with _exp_col:
-        with st.expander("View full analysis"):
-            st.markdown(briefing)
-    with _pdf_col:
-        if silver is not None:
-            pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "", scores=scores, dxy=dxy, us10y=us10y)
-            st.download_button(
-                "⬇ PDF",
-                data=pdf_bytes,
-                file_name=f"silver_briefing_{briefing_date}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-            )
-
 with right_col:
     # ── market snapshot card ──────────────────────────────────────────────────
     reasons = extract_component_reasons(briefing)
@@ -1384,6 +1364,40 @@ with right_col:
         '</div>',
         unsafe_allow_html=True,
     )
+
+# ── full-width section: AI Morning Brief + methodology + PDF ─────────────────
+
+verdict = scores.get("verdict", "Analysis generated from market signals and news flow.")
+
+st.markdown(f"""
+<div style="background:#0d1117;border:1px solid #1a5e3a;border-radius:12px;padding:24px 32px;margin:24px 0 16px;">
+    <div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">
+        AI Morning Brief — {briefing_date}
+    </div>
+    <div style="font-size:1.05rem;color:#e8eaf0;line-height:1.8;font-style:italic;">
+        {verdict}
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+_, center_col, _ = st.columns([1, 2, 1])
+with center_col:
+    st.markdown("""
+    <div style="background:#0d1f0d;border:1px solid #1a5e3a;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:0.78rem;color:#8ab58a;line-height:1.8;text-align:left;">
+    <strong style="color:#00d4aa;">How this analysis is generated</strong><br>
+    ① Live prices fetched from Yahoo Finance (Silver, Gold, DXY, US10Y)<br>
+    ② Signals computed: RSI-14, 30d volatility, significant move detection<br>
+    ③ 30 news articles ingested from Google News, Reuters, Kitco<br>
+    ④ Claude reasons from data first, news second<br>
+    ⑤ Conviction scores extracted as structured JSON
+    </div>
+    """, unsafe_allow_html=True)
+    if silver is not None:
+        pdf_bytes = generate_pdf(briefing=briefing, silver=silver, gold=gold, briefing_date=briefing_date or "", scores=scores, dxy=dxy, us10y=us10y)
+        st.download_button("⬇ Download Full Briefing PDF", data=pdf_bytes, file_name=f"silver_briefing_{briefing_date}.pdf", mime="application/pdf", use_container_width=True)
+
+with st.expander("View full analysis"):
+    st.markdown('<div class="briefing-content">' + escape_dollars(briefing) + '</div>', unsafe_allow_html=True)
 
 # ── footer ────────────────────────────────────────────────────────────────────
 

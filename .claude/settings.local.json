@@ -13,7 +13,8 @@
       "Bash(/opt/miniconda3/bin/python -c \"import streamlit as st; help\\(st.plotly_chart\\)\")",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/simoneladisa/Documents/projects/commodity-agent-silver/notebooks/test_data.ipynb'\\)\\); print\\('valid JSON'\\)\")"
     ]
   }
 }

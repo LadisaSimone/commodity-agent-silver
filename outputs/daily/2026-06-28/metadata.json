@@ -1,8 +1,8 @@
 {
   "date": "2026-06-28",
-  "run_at": "2026-06-28T14:24:43Z",
+  "run_at": "2026-06-28T20:05:33Z",
   "model": "claude-haiku-4-5",
-  "articles_fetched": 30,
+  "articles_fetched": 20,
   "significant_move": true,
   "silver_change_pct": 5.38,
   "data_reliability": "MEDIUM"

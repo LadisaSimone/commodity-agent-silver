@@ -1,10 +1,10 @@
 {
-  "macro": 5,
+  "macro": 7,
   "technicals": 5,
-  "sentiment": 5,
-  "etf_flows": 5,
-  "industrial_demand": 5,
-  "overall": 5,
-  "verdict": "No conviction data available.",
+  "sentiment": 6,
+  "etf_flows": 4,
+  "industrial_demand": 8,
+  "overall": 6,
+  "verdict": "Silver's +5.38% bounce reflects technical oversold mean reversion but masks a -29.7% month-to-date drawdown; persistent ETF selling and elevated gold/silver ratio (68.6 vs 65 avg) cap conviction despite modest macro tailwinds.",
   "supply_risk": "LOW"
 }
