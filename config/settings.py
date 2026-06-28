@@ -1,5 +1,5 @@
 MODEL = "claude-haiku-4-5"
-MAX_TOKENS = 2048
+MAX_TOKENS = 4096
 TICKER = "SI=F"
 GOLD_TICKER = "GC=F"
 RSS_URL = (

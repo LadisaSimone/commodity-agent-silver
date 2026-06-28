@@ -53,8 +53,9 @@ def main() -> None:
     print("Fetching silver news from Google News RSS...")
     articles = fetch_articles()
     print(f"Found {len(articles)} articles. Generating briefing...")
-    briefing = summarize(articles, silver, gold)
+    briefing, scores = summarize(articles, silver, gold)
     print_briefing(briefing, silver, gold)
+    print("Scores:", scores)
     path = save_briefing(briefing)
     print(f"Briefing saved to {path}")
 

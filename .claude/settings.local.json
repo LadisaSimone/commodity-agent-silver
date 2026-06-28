@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Skill(claude-api)",
-      "Skill(claude-api:*)"
+      "Skill(claude-api:*)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(python3 -c ' *)",
+      "Read(//opt/miniconda3/bin/**)",
+      "Bash(/opt/miniconda3/bin/python3 -c ' *)"
     ]
   }
 }

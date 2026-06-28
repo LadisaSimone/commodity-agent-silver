@@ -35,4 +35,9 @@ Industrial Demand: X/10 — [reason]
 
 Then calculate the final score as a weighted average using these weights: Macro 25%, Technicals 20%, Sentiment 20%, ETF Flows 15%, Industrial Demand 20%. Show the result on its own line in the format: Score: X/10
 
+At the very end of your output, after all prose, output a single line containing only a JSON object in this exact format (no extra text, no code block fences, just the raw JSON on its own line):
+{{"conviction":{{"macro":7,"technicals":5,"sentiment":6,"etf_flows":4,"industrial_demand":8,"overall":6,"verdict":"Brief one-sentence verdict here","supply_risk":"MEDIUM"}}}}
+
+Replace each integer with the actual score (1–10) from your analysis above, set overall to the weighted average rounded to the nearest integer, set verdict to a single sentence summarizing your overall conviction, and set supply_risk to the level from the SUPPLY RISK MONITOR section (LOW, MEDIUM, or HIGH).
+
 Format the briefing clearly with sections and make it concise and actionable.

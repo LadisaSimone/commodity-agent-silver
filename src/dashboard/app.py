@@ -1,4 +1,5 @@
 import io
+import json
 import re
 import sys
 from datetime import date
@@ -16,18 +17,28 @@ load_dotenv(_root / ".env")
 
 from src.fetchers.price import fetch_silver_price, fetch_gold_price
 from src.fetchers.news import fetch_articles
-from src.agents.summarizer import summarize
+from src.agents.summarizer import summarize, extract_scores
 from config.settings import MODEL, OUTPUTS_DIR
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def load_latest_briefing() -> tuple[str | None, str | None]:
+def load_latest_briefing() -> tuple[str | None, str | None, dict]:
     files = sorted(Path(OUTPUTS_DIR).glob("briefing_*.txt"))
     if not files:
-        return None, None
+        return None, None, {}
     f = files[-1]
-    return f.read_text(), f.stem.replace("briefing_", "")
+    date_str = f.stem.replace("briefing_", "")
+    raw = f.read_text()
+    briefing_text, scores = extract_scores(raw)
+    # Prefer the companion scores file if present (more reliable than text extraction)
+    scores_file = Path(OUTPUTS_DIR) / f"scores_{date_str}.json"
+    if scores_file.exists():
+        try:
+            scores = json.loads(scores_file.read_text())
+        except Exception:
+            pass
+    return briefing_text, date_str, scores
 
 
 @st.cache_data(ttl=300)
@@ -35,14 +46,16 @@ def cached_prices() -> tuple[dict, dict]:
     return fetch_silver_price(), fetch_gold_price()
 
 
-def run_and_save() -> str:
+def run_and_save() -> tuple[str, dict]:
     silver, gold = fetch_silver_price(), fetch_gold_price()
     articles = fetch_articles()
-    briefing = summarize(articles, silver, gold)
+    briefing_text, scores = summarize(articles, silver, gold)
     out_dir = Path(OUTPUTS_DIR)
     out_dir.mkdir(exist_ok=True)
-    (out_dir / f"briefing_{date.today().isoformat()}.txt").write_text(briefing)
-    return briefing
+    today = date.today().isoformat()
+    (out_dir / f"briefing_{today}.txt").write_text(briefing_text)
+    (out_dir / f"scores_{today}.json").write_text(json.dumps(scores))
+    return briefing_text, scores
 
 
 def escape_dollars(text: str) -> str:
@@ -65,31 +78,46 @@ def add_section_dividers(text: str) -> str:
     return "\n".join(result)
 
 
-def split_conviction(text: str) -> tuple[str, str | None]:
-    m = re.search(r"\n(CONVICTION SCORE\b.*)", text, re.DOTALL)
-    if m:
-        return text[: m.start()].strip(), m.group(1).strip()
-    return text.strip(), None
+def score_color(v: int | float) -> str:
+    if v <= 4:
+        return "#e53e3e"
+    if v <= 6:
+        return "#d4af37"
+    return "#38a169"
 
 
-def parse_score(conviction_text: str) -> float | None:
-    m = re.search(r"Score:\s*(\d+(?:\.\d+)?)/10", conviction_text)
-    return float(m.group(1)) if m else None
+def colored_label_html(label: str, score: int | float) -> str:
+    color = score_color(score)
+    return (
+        f'<span style="color:{color};font-size:0.72rem;font-weight:700;'
+        f'text-transform:uppercase;letter-spacing:0.06em;">{label}</span>'
+    )
 
 
-def parse_components(conviction_text: str) -> dict[str, float]:
-    patterns = {
-        "Macro": r"Macro:\s*([\d.]+)/10",
-        "Technicals": r"Technicals:\s*([\d.]+)/10",
-        "Sentiment": r"Sentiment:\s*([\d.]+)/10",
-        "ETF Flows": r"ETF Flows:\s*([\d.]+)/10",
-        "Industrial": r"Industrial Demand:\s*([\d.]+)/10",
-    }
-    return {
-        name: float(m.group(1))
-        for name, pat in patterns.items()
-        if (m := re.search(pat, conviction_text))
-    }
+def supply_risk_badge_html(level: str) -> str:
+    colors_map = {"LOW": "#145230", "MEDIUM": "#6b4400", "HIGH": "#7a1c1c"}
+    bg = colors_map.get(level.upper(), "#1a2540")
+    return (
+        f'<span style="background:{bg};color:#e8e8e8;padding:3px 12px;'
+        f'border-radius:3px;font-weight:700;font-size:0.78rem;'
+        f'letter-spacing:0.1em;font-family:\'SF Mono\',monospace;">'
+        f'{level.upper()}</span>'
+    )
+
+
+def overall_badge_html(score: int | float) -> str:
+    if score <= 4:
+        label, bg = "BEARISH", "#7a1c1c"
+    elif score <= 6:
+        label, bg = "NEUTRAL", "#6b4400"
+    else:
+        label, bg = "BULLISH", "#145230"
+    return (
+        f'<span style="background:{bg};color:#e8e8e8;padding:4px 14px;'
+        f'border-radius:3px;font-weight:700;font-size:0.8rem;'
+        f'letter-spacing:0.1em;font-family:\'SF Mono\',monospace;">'
+        f'{label}</span>'
+    )
 
 
 def price_widget_html(label: str, price_str: str, change: float, change_pct: float) -> str:
@@ -105,60 +133,27 @@ def price_widget_html(label: str, price_str: str, change: float, change_pct: flo
     )
 
 
-def score_badge_html(score: float) -> str:
-    if score <= 3:
-        bg, label = "#7a1c1c", "BEARISH"
-    elif score <= 6:
-        bg, label = "#6b4400", "NEUTRAL"
-    else:
-        bg, label = "#145230", "BULLISH"
+def extract_top_stories(text: str) -> str:
+    m = re.search(r"TOP STORIES BY IMPACT[^\n]*\n(.*?)(?=\n[A-Z][A-Z\s\/]{7,}|\Z)", text, re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def extract_bull_bear(text: str) -> tuple[str, str]:
+    m = re.search(r"BULL VS BEAR[^\n]*\n(.*?)(?=\n[A-Z][A-Z\s\/]{7,}|\Z)", text, re.DOTALL)
+    if not m:
+        return "", ""
+    section = m.group(1)
+    bull_m = re.search(r"BULLISH CASE\n(.*?)(?=BEARISH CASE|\Z)", section, re.DOTALL)
+    bear_m = re.search(r"BEARISH CASE\n(.*?)(?=VERDICT:|\Z)", section, re.DOTALL)
     return (
-        f'<span style="background:{bg};color:#e8e8e8;padding:5px 14px;'
-        f'border-radius:3px;font-weight:700;font-size:0.82rem;'
-        f'letter-spacing:0.1em;white-space:nowrap;'
-        f'font-family:\'SF Mono\',monospace;">'
-        f'{label}&ensp;{score}/10</span>'
+        bull_m.group(1).strip() if bull_m else "",
+        bear_m.group(1).strip() if bear_m else "",
     )
 
 
-def conviction_row_html(score: float | None, components: dict[str, float]) -> str:
-    if score is None:
-        return ""
-
-    def bar_color(v: float) -> str:
-        if v <= 3:
-            return "#c53030"
-        if v <= 6:
-            return "#b7791f"
-        return "#276749"
-
-    bars = ""
-    for name, val in components.items():
-        pct = val / 10 * 100
-        color = bar_color(val)
-        bars += (
-            '<div style="flex:1;min-width:75px;">'
-            '<div style="display:flex;justify-content:space-between;align-items:baseline;'
-            'margin-bottom:5px;">'
-            f'<span style="font-size:0.62rem;color:#5a6a7e;font-weight:600;'
-            f'text-transform:uppercase;letter-spacing:0.07em;">{name}</span>'
-            f'<span style="font-size:0.75rem;font-weight:700;color:#c8d4e8;'
-            f'font-family:monospace;">{val}/10</span>'
-            '</div>'
-            '<div style="background:#182030;height:4px;border-radius:2px;overflow:hidden;">'
-            f'<div style="background:{color};width:{pct:.0f}%;height:100%;border-radius:2px;"></div>'
-            '</div>'
-            '</div>'
-        )
-
-    return (
-        '<div style="display:flex;align-items:center;gap:18px;padding:12px 18px;'
-        'background:#0c1120;border:1px solid #1a2540;border-radius:5px;">'
-        f'<div style="flex-shrink:0;">{score_badge_html(score)}</div>'
-        '<div style="width:1px;height:34px;background:#1a2540;flex-shrink:0;"></div>'
-        f'<div style="flex:1;display:flex;gap:14px;align-items:center;">{bars}</div>'
-        '</div>'
-    )
+def extract_supply_risk_reason(text: str) -> str:
+    m = re.search(r"Risk:\s*(?:LOW|MEDIUM|HIGH)[^\n]*\n([^\n]+)", text)
+    return m.group(1).strip() if m else "No supply disruptions detected."
 
 
 def generate_pdf(briefing: str, silver: dict, gold: dict, briefing_date: str) -> bytes:
@@ -413,10 +408,10 @@ st.divider()
 if refresh:
     cached_prices.clear()
     with st.spinner("Fetching prices, news, and generating briefing…"):
-        briefing = run_and_save()
+        briefing, scores = run_and_save()
     briefing_date = date.today().isoformat()
 else:
-    briefing, briefing_date = load_latest_briefing()
+    briefing, briefing_date, scores = load_latest_briefing()
 
 last_updated_slot.markdown(f"**Last updated:** {briefing_date or '—'}")
 
@@ -424,56 +419,140 @@ if not briefing:
     st.info("No briefing found. Click **↻ Refresh** to generate one.")
     st.stop()
 
-body, conviction_section = split_conviction(briefing)
-score = parse_score(conviction_section) if conviction_section else None
-components = parse_components(conviction_section) if conviction_section else {}
+# ── price strip ───────────────────────────────────────────────────────────────
 
-# ── row 1: silver | gold + ratio | chat ───────────────────────────────────────
-
-col_silver, col_gold, col_chat = st.columns([1, 1, 2])
-
-with col_silver:
+col_si, col_gc, col_ratio = st.columns(3)
+with col_si:
     st.markdown(
         price_widget_html("Silver (SI=F)", f"${silver['price']:.2f}", silver["change"], silver["change_pct"]),
         unsafe_allow_html=True,
     )
-
-with col_gold:
+with col_gc:
     st.markdown(
         price_widget_html("Gold (GC=F)", f"${gold['price']:,.2f}", gold["change"], gold["change_pct"]),
         unsafe_allow_html=True,
     )
+with col_ratio:
     st.markdown(
-        '<div style="margin-top:12px;">'
-        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;'
-        'text-transform:uppercase;letter-spacing:0.09em;margin-bottom:5px;">Gold / Silver Ratio</div>'
-        f'<div style="font-size:1.5rem;font-weight:700;color:#d4af37;'
-        f'font-family:\'SF Mono\',monospace;">{ratio:.1f}</div>'
+        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:5px;">Gold / Silver Ratio</div>'
+        f'<div style="font-size:1.9rem;font-weight:700;color:#d4af37;'
+        f'font-family:\'SF Mono\',monospace;line-height:1.1;">{ratio:.1f}</div>'
+        '<div style="font-size:0.78rem;color:#2d3f5a;margin-top:3px;">Hist. avg ~65</div>',
+        unsafe_allow_html=True,
+    )
+
+st.divider()
+
+# ── supply risk bar ───────────────────────────────────────────────────────────
+
+supply_level = scores.get("supply_risk", "LOW")
+supply_reason = extract_supply_risk_reason(briefing)
+st.markdown(
+    '<div style="display:flex;align-items:center;gap:14px;padding:6px 0;">'
+    '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+    'letter-spacing:0.09em;white-space:nowrap;">Supply Risk</div>'
+    f'{supply_risk_badge_html(supply_level)}'
+    f'<div style="font-size:0.8rem;color:#5a6a7e;">{escape_dollars(supply_reason)}</div>'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+st.divider()
+
+# ── main 2:1 layout ───────────────────────────────────────────────────────────
+
+left_col, right_col = st.columns([2, 1])
+
+with left_col:
+    st.markdown(
+        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:8px;">Top Stories by Impact</div>',
+        unsafe_allow_html=True,
+    )
+    top_stories = extract_top_stories(briefing)
+    st.markdown(escape_dollars(top_stories) if top_stories else "_No top stories extracted._")
+
+    with st.expander("Full market analysis"):
+        st.markdown(escape_dollars(briefing))
+
+with right_col:
+    overall = int(scores.get("overall", 5))
+    st.markdown(
+        '<div style="text-align:center;padding:16px 0 8px;">'
+        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:6px;">Overall Conviction</div>'
+        f'<div style="font-size:3.5rem;font-weight:800;color:{score_color(overall)};'
+        f'font-family:\'SF Mono\',monospace;line-height:1;">{overall}</div>'
+        '<div style="font-size:0.7rem;color:#2d3f5a;margin-top:2px;">/ 10</div>'
+        f'<div style="margin-top:10px;">{overall_badge_html(overall)}</div>'
         '</div>',
         unsafe_allow_html=True,
     )
 
-with col_chat:
+    verdict = scores.get("verdict", "")
+    if verdict:
+        st.markdown(
+            f'<div style="font-size:0.82rem;color:#8a9ab5;font-style:italic;text-align:center;'
+            f'padding:8px 12px;border-top:1px solid #1a2540;border-bottom:1px solid #1a2540;'
+            f'margin:8px 0;">{escape_dollars(verdict)}</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.divider()
+
     st.markdown(
-        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;'
-        'text-transform:uppercase;letter-spacing:0.09em;margin-bottom:6px;">'
-        'Ask the Silver Analyst</div>',
+        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:10px;">Conviction Score</div>',
         unsafe_allow_html=True,
     )
-    with st.container(height=180):
+    _components = [
+        ("Macro", "macro"),
+        ("Technicals", "technicals"),
+        ("Sentiment", "sentiment"),
+        ("ETF Flows", "etf_flows"),
+        ("Industrial Demand", "industrial_demand"),
+    ]
+    for label, key in _components:
+        val = int(scores.get(key, 5))
+        st.markdown(colored_label_html(f"{label}  {val}/10", val), unsafe_allow_html=True)
+        st.progress(val / 10)
+
+    st.divider()
+
+    bullish, bearish = extract_bull_bear(briefing)
+    if bullish or bearish:
+        st.markdown(
+            '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+            'letter-spacing:0.09em;margin-bottom:8px;">Bull vs Bear</div>',
+            unsafe_allow_html=True,
+        )
+        b_col, br_col = st.columns(2)
+        with b_col:
+            st.markdown('<div style="font-size:0.7rem;color:#38a169;font-weight:700;margin-bottom:4px;">BULLISH</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:0.78rem;color:#6a7a8e;">{escape_dollars(bullish)}</div>', unsafe_allow_html=True)
+        with br_col:
+            st.markdown('<div style="font-size:0.7rem;color:#e53e3e;font-weight:700;margin-bottom:4px;">BEARISH</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:0.78rem;color:#6a7a8e;">{escape_dollars(bearish)}</div>', unsafe_allow_html=True)
+
+    st.divider()
+
+    st.markdown(
+        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:6px;">Ask the Silver Analyst</div>',
+        unsafe_allow_html=True,
+    )
+    with st.container(height=160):
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
     with st.form("analyst_form", clear_on_submit=True):
-        qi, bi = st.columns([5, 1])
-        with qi:
-            user_question = st.text_input(
-                "Question",
-                placeholder="Ask me anything about silver…",
-                label_visibility="collapsed",
-            )
-        with bi:
-            submitted = st.form_submit_button("Ask →", use_container_width=True)
+        user_question = st.text_input(
+            "Question",
+            placeholder="Ask me anything about silver…",
+            label_visibility="collapsed",
+        )
+        submitted = st.form_submit_button("Ask →", use_container_width=True)
     if st.session_state.chat_history:
         if st.button("✕ clear history", type="secondary"):
             st.session_state.chat_history = []
@@ -487,27 +566,19 @@ if submitted and user_question.strip():
     st.session_state.chat_history.append({"role": "assistant", "content": answer})
     st.rerun()
 
-st.divider()
-
-# ── row 2: conviction score ───────────────────────────────────────────────────
-
-st.markdown(conviction_row_html(score, components), unsafe_allow_html=True)
+# ── footer ────────────────────────────────────────────────────────────────────
 
 st.divider()
-
-# ── row 3: daily briefing ─────────────────────────────────────────────────────
-
-brf_col, dl_col = st.columns([6, 1])
-with brf_col:
+foot_left, foot_right = st.columns([3, 1])
+with foot_left:
     st.markdown(
-        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;'
-        'text-transform:uppercase;letter-spacing:0.09em;">'
-        f'Daily Briefing'
-        f'<span style="color:#2d3f5a;font-weight:400;margin-left:12px;">{briefing_date}</span>'
-        '</div>',
+        f'<div style="font-size:0.72rem;color:#2d3f5a;">'
+        f'Briefing date: {briefing_date or "—"}&nbsp;&nbsp;|&nbsp;&nbsp;'
+        f'Data: Yahoo Finance (SI=F, GC=F) &amp; Google News RSS'
+        f'</div>',
         unsafe_allow_html=True,
     )
-with dl_col:
+with foot_right:
     pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "")
     st.download_button(
         "⬇ PDF",
@@ -516,6 +587,3 @@ with dl_col:
         mime="application/pdf",
         use_container_width=True,
     )
-
-with st.container(height=450):
-    st.markdown(add_section_dividers(escape_dollars(body)))
