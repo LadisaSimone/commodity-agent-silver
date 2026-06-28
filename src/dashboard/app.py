@@ -7,6 +7,7 @@ from pathlib import Path
 
 import anthropic
 from dotenv import load_dotenv
+import plotly.graph_objects as go
 import streamlit as st
 
 _root = Path(__file__).parent.parent.parent
@@ -15,7 +16,11 @@ if str(_root) not in sys.path:
 
 load_dotenv(_root / ".env")
 
-from src.fetchers.price import fetch_silver_price, fetch_gold_price
+from src.fetchers.price import (
+    fetch_silver_price, fetch_gold_price,
+    fetch_dxy_price, fetch_us10y_price,
+    fetch_silver_history,
+)
 from src.fetchers.news import fetch_articles
 from src.agents.summarizer import summarize, extract_scores
 from config.settings import MODEL, OUTPUTS_DIR
@@ -42,14 +47,24 @@ def load_latest_briefing() -> tuple[str | None, str | None, dict]:
 
 
 @st.cache_data(ttl=300)
-def cached_prices() -> tuple[dict, dict]:
-    return fetch_silver_price(), fetch_gold_price()
+def cached_prices() -> tuple[dict, dict, dict, dict]:
+    return fetch_silver_price(), fetch_gold_price(), fetch_dxy_price(), fetch_us10y_price()
+
+
+@st.cache_data(ttl=3600)
+def cached_silver_history() -> list[dict]:
+    return fetch_silver_history(30)
 
 
 def run_and_save() -> tuple[str, dict]:
-    silver, gold = fetch_silver_price(), fetch_gold_price()
+    silver, gold, dxy, us10y = (
+        fetch_silver_price(), fetch_gold_price(), fetch_dxy_price(), fetch_us10y_price()
+    )
     articles = fetch_articles()
-    briefing_text, scores = summarize(articles, silver, gold)
+    significant_move = abs(silver["change_pct"]) >= 2.0
+    briefing_text, scores = summarize(
+        articles, silver, gold, dxy=dxy, us10y=us10y, significant_move=significant_move
+    )
     out_dir = Path(OUTPUTS_DIR)
     out_dir.mkdir(exist_ok=True)
     today = date.today().isoformat()
@@ -131,6 +146,64 @@ def price_widget_html(label: str, price_str: str, change: float, change_pct: flo
         f'<div style="font-size:0.88rem;color:{color};font-weight:600;margin-top:3px;">'
         f'{sign}{change:.2f}&nbsp;&nbsp;({sign}{change_pct:.2f}%)</div>'
     )
+
+
+def macro_widget_html(items: list[tuple[str, str, float, float]]) -> str:
+    """Render two compact stacked macro metrics (label, value_str, change, change_pct)."""
+    parts = []
+    for label, value_str, change, change_pct in items:
+        color = "#38a169" if change >= 0 else "#e53e3e"
+        sign = "+" if change >= 0 else ""
+        parts.append(
+            f'<div style="margin-bottom:10px;">'
+            f'<div style="font-size:0.6rem;color:#5a6a7e;font-weight:600;'
+            f'text-transform:uppercase;letter-spacing:0.09em;margin-bottom:2px;">{label}</div>'
+            f'<div style="font-size:1.3rem;font-weight:700;color:#d4e0f0;'
+            f'font-family:\'SF Mono\',monospace;line-height:1.1;">{value_str}</div>'
+            f'<div style="font-size:0.78rem;color:{color};font-weight:600;">'
+            f'{sign}{change:.2f}&nbsp;({sign}{change_pct:.2f}%)</div>'
+            f'</div>'
+        )
+    return "".join(parts)
+
+
+def render_silver_chart(history: list[dict]) -> go.Figure:
+    dates = [h["date"] for h in history]
+    closes = [h["close"] for h in history]
+    high_val, low_val = max(closes), min(closes)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=dates, y=closes,
+        mode="lines",
+        line=dict(color="#d4af37", width=2),
+        hovertemplate="<b>%{x}</b><br>$%{y:.2f}<extra></extra>",
+    ))
+    fig.add_hline(
+        y=high_val, line_dash="dash", line_color="rgba(56,161,105,0.45)", line_width=1,
+        annotation_text=f"30d hi ${high_val:.2f}",
+        annotation_font=dict(color="#38a169", size=9),
+        annotation_position="top right",
+    )
+    fig.add_hline(
+        y=low_val, line_dash="dash", line_color="rgba(229,62,62,0.45)", line_width=1,
+        annotation_text=f"30d lo ${low_val:.2f}",
+        annotation_font=dict(color="#e53e3e", size=9),
+        annotation_position="bottom right",
+    )
+    fig.update_layout(
+        title=dict(text="30-day silver price (SI=F)", font=dict(color="#5a6a7e", size=10), x=0, pad=dict(l=0)),
+        paper_bgcolor="#080d18",
+        plot_bgcolor="#080d18",
+        margin=dict(t=28, b=8, l=4, r=4),
+        height=180,
+        showlegend=False,
+        xaxis=dict(showgrid=False, zeroline=False, showline=False,
+                   tickfont=dict(color="#2d3f5a", size=9)),
+        yaxis=dict(showgrid=False, zeroline=False, showline=False,
+                   tickfont=dict(color="#2d3f5a", size=9), tickprefix="$"),
+    )
+    return fig
 
 
 def extract_top_stories(text: str) -> str:
@@ -375,7 +448,7 @@ st.markdown(_CSS, unsafe_allow_html=True)
 
 # ── prices ────────────────────────────────────────────────────────────────────
 
-silver, gold = cached_prices()
+silver, gold, dxy, us10y = cached_prices()
 ratio = gold["price"] / silver["price"]
 
 # ── sidebar ───────────────────────────────────────────────────────────────────
@@ -388,7 +461,7 @@ with st.sidebar:
     )
     st.divider()
     st.markdown("**Data sources**")
-    st.markdown("- Yahoo Finance (SI=F, GC=F)")
+    st.markdown("- Yahoo Finance (SI=F, GC=F, DX-Y.NYB, ^TNX)")
     st.markdown("- Google News RSS")
     st.divider()
     last_updated_slot = st.empty()
@@ -421,7 +494,7 @@ if not briefing:
 
 # ── price strip ───────────────────────────────────────────────────────────────
 
-col_si, col_gc, col_ratio = st.columns(3)
+col_si, col_gc, col_ratio, col_macro = st.columns(4)
 with col_si:
     st.markdown(
         price_widget_html("Silver (SI=F)", f"${silver['price']:.2f}", silver["change"], silver["change_pct"]),
@@ -441,8 +514,34 @@ with col_ratio:
         '<div style="font-size:0.78rem;color:#2d3f5a;margin-top:3px;">Hist. avg ~65</div>',
         unsafe_allow_html=True,
     )
+with col_macro:
+    st.markdown(
+        macro_widget_html([
+            ("DXY (Dollar Index)", f"{dxy['price']:.2f}", dxy["change"], dxy["change_pct"]),
+            ("US 10Y Yield", f"{us10y['price']:.2f}%", us10y["change"], us10y["change_pct"]),
+        ]),
+        unsafe_allow_html=True,
+    )
 
 st.divider()
+
+# ── significant move banner ───────────────────────────────────────────────────
+
+_sig_pct = silver["change_pct"]
+if abs(_sig_pct) >= 2.0:
+    _sign = "+" if _sig_pct > 0 else ""
+    if _sig_pct > 0:
+        _bg, _border, _fg = "#061a0e", "#145230", "#38a169"
+    else:
+        _bg, _border, _fg = "#1a0606", "#7a1c1c", "#e53e3e"
+    st.markdown(
+        f'<div style="background:{_bg};border:1px solid {_border};border-radius:4px;'
+        f'padding:7px 16px;margin-bottom:6px;font-size:0.84rem;font-weight:600;color:{_fg};">'
+        f'⚡ Significant move detected: {_sign}{_sig_pct:.2f}%'
+        f' — briefing focused on move drivers'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 # ── supply risk bar ───────────────────────────────────────────────────────────
 
@@ -465,6 +564,10 @@ st.divider()
 left_col, right_col = st.columns([2, 1])
 
 with left_col:
+    history = cached_silver_history()
+    if history:
+        st.plotly_chart(render_silver_chart(history), width="stretch", config={"displayModeBar": False})
+
     st.markdown(
         '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
         'letter-spacing:0.09em;margin-bottom:8px;">Top Stories by Impact</div>',
@@ -574,7 +677,7 @@ with foot_left:
     st.markdown(
         f'<div style="font-size:0.72rem;color:#2d3f5a;">'
         f'Briefing date: {briefing_date or "—"}&nbsp;&nbsp;|&nbsp;&nbsp;'
-        f'Data: Yahoo Finance (SI=F, GC=F) &amp; Google News RSS'
+        f'Data: Yahoo Finance (SI=F, GC=F, DXY, US10Y) &amp; Google News RSS'
         f'</div>',
         unsafe_allow_html=True,
     )

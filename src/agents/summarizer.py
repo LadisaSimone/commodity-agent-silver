@@ -41,9 +41,19 @@ def extract_scores(briefing_text: str) -> tuple[str, dict]:
     return briefing_text, dict(_DEFAULT_SCORES)
 
 
-def summarize(articles: list[dict], silver: dict, gold: dict) -> tuple[str, dict]:
+def summarize(
+    articles: list[dict],
+    silver: dict,
+    gold: dict,
+    dxy: dict | None = None,
+    us10y: dict | None = None,
+    significant_move: bool = False,
+) -> tuple[str, dict]:
     client = anthropic.Anthropic()
     today = date.today().strftime("%B %d, %Y")
+
+    def _sign(v: float) -> str:
+        return "+" if v >= 0 else ""
 
     ratio = gold["price"] / silver["price"]
     metals_snapshot = (
@@ -51,6 +61,27 @@ def summarize(articles: list[dict], silver: dict, gold: dict) -> tuple[str, dict
         f"Gold   (GC=F): {_fmt(gold)}\n"
         f"Gold/Silver Ratio: {ratio:.1f}"
     )
+    if dxy and dxy["price"]:
+        metals_snapshot += (
+            f"\nDXY (Dollar Index): {dxy['price']:.2f}"
+            f"  {_sign(dxy['change'])}{dxy['change']:.2f}"
+            f" ({_sign(dxy['change_pct'])}{dxy['change_pct']:.2f}%)"
+        )
+    if us10y and us10y["price"]:
+        metals_snapshot += (
+            f"\nUS 10Y Yield: {us10y['price']:.2f}%"
+            f"  {_sign(us10y['change'])}{us10y['change']:.3f}"
+            f" ({_sign(us10y['change_pct'])}{us10y['change_pct']:.2f}%)"
+        )
+
+    significant_move_context = ""
+    if significant_move:
+        sign = _sign(silver["change_pct"])
+        significant_move_context = (
+            f"\nNOTE: Silver is experiencing a significant intraday move "
+            f"({sign}{silver['change_pct']:.2f}%). "
+            f"Prioritize explaining the key drivers behind this move in your analysis."
+        )
 
     articles_text = "\n\n".join(
         f"Title: {a['title']}\nDate: {a['date']}\nURL: {a.get('url', '')}\nSummary: {a['description']}"
@@ -60,6 +91,7 @@ def summarize(articles: list[dict], silver: dict, gold: dict) -> tuple[str, dict
     prompt = _PROMPT_TEMPLATE.format(
         today=today,
         metals_snapshot=metals_snapshot,
+        significant_move_context=significant_move_context,
         articles_text=articles_text,
     )
 

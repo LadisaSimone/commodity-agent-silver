@@ -6,3 +6,4 @@ lxml
 yfinance
 streamlit
 reportlab
+plotly

@@ -7,7 +7,10 @@
       "Skill(run:*)",
       "Bash(python3 -c ' *)",
       "Read(//opt/miniconda3/bin/**)",
-      "Bash(/opt/miniconda3/bin/python3 -c ' *)"
+      "Bash(/opt/miniconda3/bin/python3 -c ' *)",
+      "Bash(/opt/miniconda3/bin/python -c \"import plotly; print\\('plotly', plotly.__version__\\)\")",
+      "Bash(/opt/miniconda3/bin/python -c ' *)",
+      "Bash(/opt/miniconda3/bin/python -c \"import streamlit as st; help\\(st.plotly_chart\\)\")"
     ]
   }
 }
