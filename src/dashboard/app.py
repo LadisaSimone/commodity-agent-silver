@@ -46,20 +46,32 @@ def load_latest_briefing() -> tuple[str | None, str | None, dict]:
     return briefing_text, date_str, scores
 
 
-@st.cache_data(ttl=300)
-def cached_prices() -> tuple[dict, dict, dict, dict]:
-    return fetch_silver_price(), fetch_gold_price(), fetch_dxy_price(), fetch_us10y_price()
+def load_latest_prices() -> tuple[dict, dict, dict, dict] | None:
+    files = sorted(Path(OUTPUTS_DIR).glob("prices_*.json"))
+    if not files:
+        return None
+    try:
+        data = json.loads(files[-1].read_text())
+        return data["silver"], data["gold"], data["dxy"], data["us10y"]
+    except Exception:
+        return None
 
 
-@st.cache_data(ttl=3600)
-def cached_silver_history() -> list[dict]:
-    return fetch_silver_history(30)
+def load_latest_history() -> list[dict]:
+    files = sorted(Path(OUTPUTS_DIR).glob("history_*.json"))
+    if not files:
+        return []
+    try:
+        return json.loads(files[-1].read_text())
+    except Exception:
+        return []
 
 
-def run_and_save() -> tuple[str, dict]:
+def run_and_save() -> tuple[str, dict, dict, dict, dict, dict, list[dict]]:
     silver, gold, dxy, us10y = (
         fetch_silver_price(), fetch_gold_price(), fetch_dxy_price(), fetch_us10y_price()
     )
+    history = fetch_silver_history(30)
     articles = fetch_articles()
     significant_move = abs(silver["change_pct"]) >= 2.0
     briefing_text, scores = summarize(
@@ -70,7 +82,11 @@ def run_and_save() -> tuple[str, dict]:
     today = date.today().isoformat()
     (out_dir / f"briefing_{today}.txt").write_text(briefing_text)
     (out_dir / f"scores_{today}.json").write_text(json.dumps(scores))
-    return briefing_text, scores
+    (out_dir / f"prices_{today}.json").write_text(
+        json.dumps({"silver": silver, "gold": gold, "dxy": dxy, "us10y": us10y})
+    )
+    (out_dir / f"history_{today}.json").write_text(json.dumps(history))
+    return briefing_text, scores, silver, gold, dxy, us10y, history
 
 
 def escape_dollars(text: str) -> str:
@@ -446,11 +462,6 @@ if "chat_history" not in st.session_state:
 
 st.markdown(_CSS, unsafe_allow_html=True)
 
-# ── prices ────────────────────────────────────────────────────────────────────
-
-silver, gold, dxy, us10y = cached_prices()
-ratio = gold["price"] / silver["price"]
-
 # ── sidebar ───────────────────────────────────────────────────────────────────
 
 with st.sidebar:
@@ -479,69 +490,76 @@ st.divider()
 # ── load / generate briefing ──────────────────────────────────────────────────
 
 if refresh:
-    cached_prices.clear()
     with st.spinner("Fetching prices, news, and generating briefing…"):
-        briefing, scores = run_and_save()
+        briefing, scores, silver, gold, dxy, us10y, history = run_and_save()
     briefing_date = date.today().isoformat()
 else:
     briefing, briefing_date, scores = load_latest_briefing()
+    _prices = load_latest_prices()
+    if _prices is not None:
+        silver, gold, dxy, us10y = _prices
+    else:
+        silver = gold = dxy = us10y = None
+    history = load_latest_history()
 
 last_updated_slot.markdown(f"**Last updated:** {briefing_date or '—'}")
 
 if not briefing:
-    st.info("No briefing found. Click **↻ Refresh** to generate one.")
+    st.info("Click **↻ Refresh** to generate your first briefing.")
     st.stop()
 
 # ── price strip ───────────────────────────────────────────────────────────────
 
-col_si, col_gc, col_ratio, col_macro = st.columns(4)
-with col_si:
-    st.markdown(
-        price_widget_html("Silver (SI=F)", f"${silver['price']:.2f}", silver["change"], silver["change_pct"]),
-        unsafe_allow_html=True,
-    )
-with col_gc:
-    st.markdown(
-        price_widget_html("Gold (GC=F)", f"${gold['price']:,.2f}", gold["change"], gold["change_pct"]),
-        unsafe_allow_html=True,
-    )
-with col_ratio:
-    st.markdown(
-        '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
-        'letter-spacing:0.09em;margin-bottom:5px;">Gold / Silver Ratio</div>'
-        f'<div style="font-size:1.9rem;font-weight:700;color:#d4af37;'
-        f'font-family:\'SF Mono\',monospace;line-height:1.1;">{ratio:.1f}</div>'
-        '<div style="font-size:0.78rem;color:#2d3f5a;margin-top:3px;">Hist. avg ~65</div>',
-        unsafe_allow_html=True,
-    )
-with col_macro:
-    st.markdown(
-        macro_widget_html([
-            ("DXY (Dollar Index)", f"{dxy['price']:.2f}", dxy["change"], dxy["change_pct"]),
-            ("US 10Y Yield", f"{us10y['price']:.2f}%", us10y["change"], us10y["change_pct"]),
-        ]),
-        unsafe_allow_html=True,
-    )
+if silver is not None:
+    ratio = gold["price"] / silver["price"]
+    col_si, col_gc, col_ratio, col_macro = st.columns(4)
+    with col_si:
+        st.markdown(
+            price_widget_html("Silver (SI=F)", f"${silver['price']:.2f}", silver["change"], silver["change_pct"]),
+            unsafe_allow_html=True,
+        )
+    with col_gc:
+        st.markdown(
+            price_widget_html("Gold (GC=F)", f"${gold['price']:,.2f}", gold["change"], gold["change_pct"]),
+            unsafe_allow_html=True,
+        )
+    with col_ratio:
+        st.markdown(
+            '<div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;'
+            'letter-spacing:0.09em;margin-bottom:5px;">Gold / Silver Ratio</div>'
+            f'<div style="font-size:1.9rem;font-weight:700;color:#d4af37;'
+            f'font-family:\'SF Mono\',monospace;line-height:1.1;">{ratio:.1f}</div>'
+            '<div style="font-size:0.78rem;color:#2d3f5a;margin-top:3px;">Hist. avg ~65</div>',
+            unsafe_allow_html=True,
+        )
+    with col_macro:
+        st.markdown(
+            macro_widget_html([
+                ("DXY (Dollar Index)", f"{dxy['price']:.2f}", dxy["change"], dxy["change_pct"]),
+                ("US 10Y Yield", f"{us10y['price']:.2f}%", us10y["change"], us10y["change_pct"]),
+            ]),
+            unsafe_allow_html=True,
+        )
 
-st.divider()
+    st.divider()
 
-# ── significant move banner ───────────────────────────────────────────────────
+    # ── significant move banner ───────────────────────────────────────────────
 
-_sig_pct = silver["change_pct"]
-if abs(_sig_pct) >= 2.0:
-    _sign = "+" if _sig_pct > 0 else ""
-    if _sig_pct > 0:
-        _bg, _border, _fg = "#061a0e", "#145230", "#38a169"
-    else:
-        _bg, _border, _fg = "#1a0606", "#7a1c1c", "#e53e3e"
-    st.markdown(
-        f'<div style="background:{_bg};border:1px solid {_border};border-radius:4px;'
-        f'padding:7px 16px;margin-bottom:6px;font-size:0.84rem;font-weight:600;color:{_fg};">'
-        f'⚡ Significant move detected: {_sign}{_sig_pct:.2f}%'
-        f' — briefing focused on move drivers'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    _sig_pct = silver["change_pct"]
+    if abs(_sig_pct) >= 2.0:
+        _sign = "+" if _sig_pct > 0 else ""
+        if _sig_pct > 0:
+            _bg, _border, _fg = "#061a0e", "#145230", "#38a169"
+        else:
+            _bg, _border, _fg = "#1a0606", "#7a1c1c", "#e53e3e"
+        st.markdown(
+            f'<div style="background:{_bg};border:1px solid {_border};border-radius:4px;'
+            f'padding:7px 16px;margin-bottom:6px;font-size:0.84rem;font-weight:600;color:{_fg};">'
+            f'⚡ Significant move detected: {_sign}{_sig_pct:.2f}%'
+            f' — briefing focused on move drivers'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
 # ── supply risk bar ───────────────────────────────────────────────────────────
 
@@ -564,7 +582,6 @@ st.divider()
 left_col, right_col = st.columns([2, 1])
 
 with left_col:
-    history = cached_silver_history()
     if history:
         st.plotly_chart(render_silver_chart(history), width="stretch", config={"displayModeBar": False})
 
@@ -682,11 +699,12 @@ with foot_left:
         unsafe_allow_html=True,
     )
 with foot_right:
-    pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "")
-    st.download_button(
-        "⬇ PDF",
-        data=pdf_bytes,
-        file_name=f"silver_briefing_{briefing_date}.pdf",
-        mime="application/pdf",
-        use_container_width=True,
-    )
+    if silver is not None:
+        pdf_bytes = generate_pdf(briefing, silver, gold, briefing_date or "")
+        st.download_button(
+            "⬇ PDF",
+            data=pdf_bytes,
+            file_name=f"silver_briefing_{briefing_date}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
