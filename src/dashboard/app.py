@@ -223,7 +223,7 @@ def render_silver_chart(history: list[dict]) -> go.Figure:
 
 
 def extract_top_stories(text: str) -> str:
-    m = re.search(r"TOP STORIES BY IMPACT[^\n]*\n(.*?)(?=\n[A-Z][A-Z\s\/]{7,}|\Z)", text, re.DOTALL)
+    m = re.search(r"TOP STORIES BY IMPACT[^\n]*\n(.*?)(?=\n#{1,3}\s+[A-Z]|\n\*\*[A-Z]|\n[A-Z][A-Z\s\/]{7,}|\Z)", text, re.DOTALL)
     return m.group(1).strip() if m else ""
 
 
@@ -593,7 +593,7 @@ with left_col:
     top_stories = extract_top_stories(briefing)
     st.markdown(escape_dollars(top_stories) if top_stories else "_No top stories extracted._")
 
-    with st.expander("Full market analysis"):
+    with st.expander("📋 Full market analysis", expanded=False):
         st.markdown(escape_dollars(briefing))
 
 with right_col:
