@@ -131,8 +131,13 @@ def extract_supply_risk_reason(text: str) -> str:
 # ── PDF ───────────────────────────────────────────────────────────────────────
 
 def generate_pdf(briefing: str, silver: dict, gold: dict, briefing_date: str) -> bytes:
-    # Strip all markdown links before rendering so no raw URLs leak into the PDF
-    briefing = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', briefing)
+    # Strip URLs before rendering — four passes to handle truncated/malformed output
+    clean = re.sub(r'\[([^\]]+)\]\(https?://[^\)]*\)', r'\1', briefing)   # pass 1: standard [text](url)
+    clean = re.sub(r'\[([^\]]+)\]\(https?://[^\s\)]*', r'\1', clean)      # pass 2: truncated url (no closing paren)
+    clean = re.sub(r'https?://\S+', '', clean)                             # pass 3: bare urls
+    clean = re.sub(r'\(\s*,?\s*\)', '', clean)                             # pass 4a: empty parens ()
+    clean = re.sub(r',\s*\)', ')', clean)                                  # pass 4b: trailing comma before )
+    briefing = clean
 
     from reportlab.lib.colors import HexColor
     from reportlab.lib.pagesizes import A4
