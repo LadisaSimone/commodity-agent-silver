@@ -1656,6 +1656,27 @@ with method_col:
             briefing_date=briefing_date or "",
             scores=scores,
         )
+        st.markdown("""
+<style>
+[data-testid="stDownloadButton"] button {
+    background: linear-gradient(135deg, #e9c46a, #f4a261) !important;
+    color: #0a0a0a !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.05em !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1.5rem !important;
+    width: 100% !important;
+    box-shadow: 0 4px 15px rgba(233, 196, 106, 0.3) !important;
+}
+[data-testid="stDownloadButton"] button:hover {
+    background: linear-gradient(135deg, #f4a261, #e9c46a) !important;
+    box-shadow: 0 6px 20px rgba(233, 196, 106, 0.5) !important;
+    transform: translateY(-1px) !important;
+}
+</style>
+""", unsafe_allow_html=True)
         st.download_button("⬇ Download Full Briefing PDF", data=pdf_bytes, file_name=f"silver_briefing_{briefing_date}.pdf", mime="application/pdf", use_container_width=True)
 
 # ── footer ────────────────────────────────────────────────────────────────────
