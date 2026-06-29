@@ -1146,7 +1146,7 @@ def render_silver_chart(history: list[dict]) -> go.Figure:
             tickcolor="#5a6a7e",
             side="right",
         ),
-        height=220,
+        height=180,
         margin=dict(l=0, r=60, t=20, b=30),
         paper_bgcolor="#0a0e1a",
         plot_bgcolor="#0a0e1a",
@@ -1354,6 +1354,15 @@ html, body, [class*="css"] { font-size: 13px !important; }
 h1 { font-size: 1.3rem !important; margin-bottom: 0.3rem !important; }
 h2 { font-size: 1.1rem !important; margin-bottom: 0.2rem !important; }
 h3 { font-size: 1rem !important; margin-bottom: 0.2rem !important; }
+
+/* Smaller chart area */
+[data-testid="stPlotlyChart"] { margin-bottom: 0 !important; }
+
+/* Compact morning brief */
+.morning-brief-box { padding: 0.5rem 1rem !important; font-size: 0.85rem !important; }
+
+/* Pull full analysis section up */
+.full-analysis-section { margin-top: 0.25rem !important; }
 </style>
 """
 
@@ -1547,12 +1556,12 @@ with snap_col:
             f'flex-shrink:0;margin-top:3px;"></div>'
             f'<div style="flex:1;min-width:0;">'
             f'<div style="display:flex;align-items:center;gap:10px;margin-bottom:2px;">'
-            f'<span style="font-size:0.67rem;color:#4a5a72;font-weight:600;text-transform:uppercase;'
+            f'<span style="font-size:0.6rem;color:#4a5a72;font-weight:600;text-transform:uppercase;'
             f'letter-spacing:0.07em;">{label}</span>'
-            f'<span style="font-size:0.67rem;color:{status_color};font-weight:700;'
+            f'<span style="font-size:0.6rem;color:{status_color};font-weight:700;'
             f'letter-spacing:0.06em;">{status}</span>'
             f'</div>'
-            f'<div style="font-size:0.72rem;color:#4a5a72;line-height:1.4;">{short_reason}</div>'
+            f'<div style="font-size:0.7rem;color:#4a5a72;line-height:1.4;">{short_reason}</div>'
             f'</div></div>'
         )
 
@@ -1574,7 +1583,7 @@ with snap_col:
         f'<div style="font-size:0.67rem;color:#4a5a72;font-weight:600;text-transform:uppercase;'
         f'letter-spacing:0.07em;">Overall Conviction</div>'
         f'<div style="border:1px solid {o_color};border-radius:4px;padding:2px 10px;'
-        f'font-size:1.1rem;font-weight:800;color:{o_color};font-family:\'SF Mono\',monospace;">'
+        f'font-size:1rem;font-weight:800;color:{o_color};font-family:\'SF Mono\',monospace;">'
         f'{overall}/10</div>'
         f'<span style="background:{o_color}22;color:{o_color};font-size:0.67rem;font-weight:700;'
         f'padding:2px 10px;border-radius:3px;letter-spacing:0.07em;">{o_status}</span>'
@@ -1588,11 +1597,11 @@ with snap_col:
 verdict = scores.get("verdict", "Analysis generated from market signals and news flow.")
 
 st.markdown(f"""
-<div style="background:#0d1117;border:1px solid #1a5e3a;border-radius:12px;padding:24px 32px;margin:16px 0 12px;">
-    <div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">
+<div style="background:#0d1117;border:1px solid #1a5e3a;border-radius:12px;padding:12px 24px;margin:8px 0 6px;">
+    <div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">
         AI Morning Brief — {briefing_date}
     </div>
-    <div style="font-size:1.05rem;color:#e8eaf0;line-height:1.8;font-style:italic;">
+    <div style="font-size:0.85rem;color:#e8eaf0;line-height:1.6;font-style:italic;">
         {verdict}
     </div>
 </div>
