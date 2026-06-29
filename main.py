@@ -1,3 +1,4 @@
+import argparse
 import json
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -38,14 +39,16 @@ def save_outputs(
     signals: dict,
     data_quality: dict,
     articles: list[dict],
+    history: list[dict],
     silver: dict,
     gold: dict,
+    dxy: dict,
+    us10y: dict,
     today: str,
 ) -> None:
     out_dir = Path(OUTPUTS_DIR)
     out_dir.mkdir(exist_ok=True)
 
-    # Structured daily storage
     daily_dir = out_dir / "daily" / today
     raw_dir = daily_dir / "raw"
     briefing_dir = daily_dir / "briefing"
@@ -53,9 +56,10 @@ def save_outputs(
     briefing_dir.mkdir(parents=True, exist_ok=True)
 
     (raw_dir / "prices.json").write_text(
-        json.dumps({"silver": silver, "gold": gold}, indent=2)
+        json.dumps({"silver": silver, "gold": gold, "dxy": dxy, "us10y": us10y}, indent=2)
     )
-    (raw_dir / "news.json").write_text(json.dumps(articles, indent=2))
+    (raw_dir / "news.json").write_text(json.dumps({"articles": articles}, indent=2))
+    (raw_dir / "history.json").write_text(json.dumps(history, indent=2))
     (raw_dir / "signals.json").write_text(json.dumps(signals, indent=2))
 
     (briefing_dir / "briefing.txt").write_text(briefing)
@@ -92,18 +96,46 @@ def print_briefing(briefing: str, silver: dict, gold: dict) -> None:
 
 
 def main() -> None:
-    print("Fetching live metals prices...")
-    silver = fetch_silver_price()
-    gold = fetch_gold_price()
-    dxy = fetch_dxy_price()
-    us10y = fetch_us10y_price()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="Force re-fetch all data, bypassing cache")
+    args = parser.parse_args()
 
-    print("Fetching 30-day price history...")
-    history = fetch_silver_history(30)
+    today = date.today().isoformat()
+    raw_dir = Path(OUTPUTS_DIR) / "daily" / today / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Fetching silver news...")
-    articles = fetch_articles()
+    # ── Prices ────────────────────────────────────────────────────────────────
+    prices_cache = raw_dir / "prices.json"
+    if not args.force and prices_cache.exists():
+        print("Loading prices from cache...")
+        cached = json.loads(prices_cache.read_text())
+        silver, gold, dxy, us10y = cached["silver"], cached["gold"], cached["dxy"], cached["us10y"]
+    else:
+        print("Fetching live metals prices...")
+        silver = fetch_silver_price()
+        gold = fetch_gold_price()
+        dxy = fetch_dxy_price()
+        us10y = fetch_us10y_price()
 
+    # ── History ───────────────────────────────────────────────────────────────
+    history_cache = raw_dir / "history.json"
+    if not args.force and history_cache.exists():
+        print("Loading history from cache...")
+        history = json.loads(history_cache.read_text())
+    else:
+        print("Fetching 30-day price history...")
+        history = fetch_silver_history(30)
+
+    # ── News ──────────────────────────────────────────────────────────────────
+    news_cache = raw_dir / "news.json"
+    if not args.force and news_cache.exists():
+        print("Loading news from cache...")
+        articles = json.loads(news_cache.read_text())["articles"]
+    else:
+        print("Fetching silver news...")
+        articles = fetch_articles()
+
+    # ── Signals (always recompute — fast and free) ────────────────────────────
     print("Computing quantitative signals...")
     signals = compute_price_signals(silver, gold, dxy, us10y, history)
     data_quality = compute_data_quality(silver, gold, dxy, us10y)
@@ -123,8 +155,7 @@ def main() -> None:
     print_briefing(briefing, silver, gold)
     print("Scores:", scores)
 
-    today = date.today().isoformat()
-    save_outputs(briefing, scores, signals, data_quality, articles, silver, gold, today)
+    save_outputs(briefing, scores, signals, data_quality, articles, history, silver, gold, dxy, us10y, today)
     print(f"Outputs saved to {OUTPUTS_DIR}/daily/{today}/ (+ flat compat files)")
 
 

@@ -619,13 +619,24 @@ def generate_pdf(
                         break
             return out
 
-        # stories: numbered items only, max 5
+        # stories: numbered items only, max 5, with hyperlinks where available
         if sec_mode == "stories":
             count = 0
             for line in body.splitlines():
                 num_m = re.match(r"^(\d+)\.\s+(.+)", line.strip())
                 if num_m and count < 5:
-                    out.append(Paragraph(f"<b>{num_m.group(1)}.</b> {md_to_rl(strip_links(num_m.group(2)))}", s_p2_body))
+                    item_text = num_m.group(2)
+                    link_m = re.match(r'\[([^\]]+)\]\(([^)]+)\)(.*)', item_text)
+                    if link_m:
+                        title = link_m.group(1).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                        url   = link_m.group(2)
+                        rest  = md_to_rl(strip_links(link_m.group(3)))
+                        out.append(Paragraph(
+                            f'<b>{num_m.group(1)}.</b> <link href="{url}">{title}</link>{rest}',
+                            s_p2_body,
+                        ))
+                    else:
+                        out.append(Paragraph(f"<b>{num_m.group(1)}.</b> {md_to_rl(strip_links(item_text))}", s_p2_body))
                     count += 1
             return out
 

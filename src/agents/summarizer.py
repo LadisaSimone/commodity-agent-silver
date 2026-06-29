@@ -44,6 +44,32 @@ def strip_urls(text: str) -> str:
     return text
 
 
+def reattach_links(briefing: str, articles: list[dict]) -> str:
+    url_lookup = [
+        (a["title"].lower(), a.get("url", ""))
+        for a in articles
+        if a.get("url")
+    ]
+
+    def find_url(source_name: str) -> str | None:
+        words = [w for w in re.split(r'\W+', source_name.lower()) if len(w) > 2]
+        best_url, best_count = None, 1  # require at least 2 matching words
+        for title, url in url_lookup:
+            count = sum(1 for w in words if w in title)
+            if count >= 2 and count > best_count:
+                best_count = count
+                best_url = url
+        return best_url
+
+    def replace_match(m: re.Match) -> str:
+        source_name = m.group(1)
+        url = find_url(source_name)
+        return f"[{source_name}]({url})" if url else m.group(0)
+
+    # Only replace bare [Text] — skip already-linked [Text](url)
+    return re.sub(r'\[([^\]]+)\](?!\()', replace_match, briefing)
+
+
 def _format_data_quality_block(data_quality: dict, today: str) -> str:
     lines = [f"DATA AVAILABILITY — {today}"]
     for k in data_quality.get("available", []):
@@ -84,18 +110,34 @@ def _build_fallback_signals(silver: dict, gold: dict, dxy: dict | None, us10y: d
 
 def extract_scores(briefing_text: str) -> tuple[str, dict]:
     lines = briefing_text.splitlines()
+
+    def _try_parse(i: int) -> dict | None:
+        line = lines[i].strip()
+        if '"conviction"' not in line:
+            return None
+        try:
+            data = json.loads(line[line.index("{"):])
+            return {**_DEFAULT_SCORES, **data.get("conviction", {})}
+        except (json.JSONDecodeError, KeyError, ValueError):
+            return None
+
+    # Search first 10 lines (JSON-first format)
+    for i in range(min(10, len(lines))):
+        scores = _try_parse(i)
+        if scores is not None:
+            # Remove the JSON line (and any immediately following blank line) from briefing
+            rest_start = i + 1
+            while rest_start < len(lines) and not lines[rest_start].strip():
+                rest_start += 1
+            return "\n".join(lines[rest_start:]).strip(), scores
+
+    # Search last 10 lines (JSON-last format)
     search_start = max(0, len(lines) - 10)
     for i in range(len(lines) - 1, search_start - 1, -1):
-        line = lines[i].strip()
-        if '"conviction"' in line and line:
-            try:
-                json_start = line.index("{")
-                data = json.loads(line[json_start:])
-                scores = {**_DEFAULT_SCORES, **data.get("conviction", {})}
-                clean_text = "\n".join(lines[:i]).rstrip()
-                return clean_text, scores
-            except (json.JSONDecodeError, KeyError, ValueError):
-                continue
+        scores = _try_parse(i)
+        if scores is not None:
+            return "\n".join(lines[:i]).rstrip(), scores
+
     return briefing_text, dict(_DEFAULT_SCORES)
 
 
@@ -151,4 +193,6 @@ def summarize(
             else:
                 raise
 
-    return extract_scores(response.content[0].text)
+    clean_briefing, scores = extract_scores(response.content[0].text)
+    clean_briefing = reattach_links(clean_briefing, articles)
+    return clean_briefing, scores
