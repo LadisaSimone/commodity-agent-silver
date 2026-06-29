@@ -1363,6 +1363,18 @@ h3 { font-size: 1rem !important; margin-bottom: 0.2rem !important; }
 
 /* Pull full analysis section up */
 .full-analysis-section { margin-top: 0.25rem !important; }
+
+/* Sidebar title larger */
+[data-testid="stSidebar"] .sidebar-title { font-size: 1.2rem !important; font-weight: bold !important; }
+
+/* Fix clipped sparklines in metric cards */
+[data-testid="metric-container"] { overflow: visible !important; height: auto !important; }
+
+/* Smaller alert banner */
+.alert-banner { font-size: 0.75rem !important; padding: 0.3rem 0.75rem !important; }
+
+/* Compact section headers */
+.section-header { font-size: 0.7rem !important; letter-spacing: 0.08em !important; padding: 0.2rem 0 !important; }
 </style>
 """
 
@@ -1385,7 +1397,7 @@ st.markdown(_CSS, unsafe_allow_html=True)
 with st.sidebar:
     st.markdown(
         '<div style="padding:20px 16px 14px;border-bottom:1px solid #1a2035;">'
-        '<div style="font-size:1.05rem;font-weight:800;color:#ffffff;letter-spacing:-0.01em;">'
+        '<div style="font-size:1.2rem;font-weight:800;color:#ffffff;letter-spacing:-0.01em;">'
         '🪙 Silver Market Intelligence</div>'
         '<div style="font-size:0.7rem;color:#4a5a72;margin-top:3px;">AI-powered metals briefing</div>'
         '</div>',
@@ -1429,7 +1441,7 @@ if silver is not None:
         spark_div = f'<div style="position:absolute;top:10px;right:10px;opacity:0.8;">{spark}</div>' if spark else ""
         return (
             f'<div style="background:#0d1117;border:1px solid #1a2035;border-radius:6px;'
-            f'padding:14px 14px 10px;position:relative;min-height:86px;">'
+            f'padding:14px 14px 10px;position:relative;min-height:86px;overflow:visible;">'
             f'{spark_div}'
             f'<div style="font-size:0.62rem;color:#4a5a72;font-weight:600;text-transform:uppercase;'
             f'letter-spacing:0.09em;margin-bottom:4px;">{label}</div>'
@@ -1474,15 +1486,15 @@ if silver is not None:
         st.markdown(
             '<div style="margin-top:12px;">'
             f'<div style="background:#0d2818;border:1px solid {_border};border-radius:4px;'
-            f'padding:10px 18px;display:flex;align-items:center;justify-content:space-between;">'
+            f'padding:3px 18px;display:flex;align-items:center;justify-content:space-between;">'
             f'<div>'
-            f'<span style="color:#ffa500;margin-right:8px;font-size:1rem;">⚡</span>'
-            f'<span style="font-size:0.82rem;font-weight:700;color:{_fg};text-transform:uppercase;'
+            f'<span style="color:#ffa500;margin-right:8px;font-size:0.85rem;">⚡</span>'
+            f'<span style="font-size:0.75rem;font-weight:700;color:{_fg};text-transform:uppercase;'
             f'letter-spacing:0.06em;">SIGNIFICANT MOVE DETECTED</span>'
-            f'<span style="font-size:0.82rem;color:#c8d4e8;margin-left:10px;">'
+            f'<span style="font-size:0.75rem;color:#c8d4e8;margin-left:10px;">'
             f'Silver {_sign}{_sig_pct:.2f}% — briefing focused on move drivers</span>'
             f'</div>'
-            f'<span style="font-size:0.78rem;color:{_fg};white-space:nowrap;cursor:pointer;">'
+            f'<span style="font-size:0.72rem;color:{_fg};white-space:nowrap;cursor:pointer;">'
             f'View details →</span>'
             f'</div>'
             f'</div>',
@@ -1601,8 +1613,8 @@ analysis_col, method_col = st.columns([3, 2])
 
 with analysis_col:
     st.markdown(
-        '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
-        'letter-spacing:0.09em;margin-bottom:6px;">Full Analysis</div>',
+        '<div style="font-size:0.6rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
+        'letter-spacing:0.08em;margin-bottom:3px;padding:0.1rem 0;">Full Analysis</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -1615,8 +1627,8 @@ with analysis_col:
 
 with method_col:
     st.markdown(
-        '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
-        'letter-spacing:0.09em;margin-bottom:6px;">About This Report</div>',
+        '<div style="font-size:0.6rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
+        'letter-spacing:0.08em;margin-bottom:3px;padding:0.1rem 0;">About This Report</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
