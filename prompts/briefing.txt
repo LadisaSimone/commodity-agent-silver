@@ -83,22 +83,42 @@ CONFIDENCE: High/Medium/Low — [one sentence]
 
 ## RANKED MARKET DRIVERS
 
-Rank the top 3 drivers by confirming signals (quantitative data counts as 2, news-only counts as 1). Maximum 2 bullet points per driver. #1 driver must have at least one quantitative signal.
+Rank the top 3 drivers by confirming signals (quantitative data counts as 2, news-only counts as 1). Maximum 3 bullet points per driver. #1 driver must have at least one quantitative signal. Use this exact format:
 
 ### #1 [DRIVER NAME] (Primary)
-- [key quantitative signal with specific number]
-- [news confirmation or "No corroborating news"]
-INTERPRETATION: [one sentence]
+Impact: HIGH/MEDIUM/LOW | Confidence: High/Medium/Low | Evidence: ★★★★★/★★★☆☆/★★☆☆☆
+"[One sentence explaining why this driver matters today, with at least one specific number.]"
+- [Quantitative signal with specific number]
+- [Quantitative signal with specific number, or "None — news-only"]
+- News confirmation: [Source] [confirms/contradicts/no corroboration] [brief fact]
 
 ### #2 [DRIVER NAME] (Secondary)
-- [key signal with number, or "None — news-only"]
-- [news confirmation or "None"]
-INTERPRETATION: [one sentence]
+Impact: HIGH/MEDIUM/LOW | Confidence: High/Medium/Low | Evidence: ★★★★★/★★★☆☆/★★☆☆☆
+"[One sentence with specific number.]"
+- [Key signal with number, or "None — news-only"]
+- [Signal or "None"]
+- News confirmation: [Source] or "No corroborating news"
 
 ### #3 [DRIVER NAME] (Tertiary)
-- [key signal with number, or "None — news-only"]
-- [news confirmation or "None"]
-INTERPRETATION: [one sentence]
+Impact: HIGH/MEDIUM/LOW | Confidence: High/Medium/Low | Evidence: ★★★★★/★★★☆☆/★★☆☆☆
+"[One sentence with specific number.]"
+- [Key signal with number, or "None — news-only"]
+- [Signal or "None"]
+- News confirmation: [Source] or "No corroborating news"
+
+Rules:
+- The quoted sentence must appear immediately after the header line, before any bullet points.
+- The quoted sentence must contain at least one specific number and explain WHY this driver matters today — not just what it is.
+- Impact HIGH/MEDIUM/LOW reflects evidence strength (quantitative signals present = HIGH eligible).
+- Confidence must match the star rating: ★★★★★ = High, ★★★☆☆ = Medium, ★★☆☆☆ = Low.
+
+Example:
+### #1 TECHNICAL OVERSOLD CONDITIONS (Primary)
+Impact: HIGH | Confidence: High | Evidence: ★★★★★
+"RSI at 27.2 — the lowest in 30 days — signals exhausted selling pressure after a 23.7% drawdown, creating mechanical mean-reversion conditions."
+- RSI-14: 27.2 (oversold <30 threshold)
+- 30d drawdown: -23.7% from $76.90 high
+- News confirmation: [KITCO] and [pv magazine USA] confirm extended selloff context
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
