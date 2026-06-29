@@ -13,7 +13,33 @@ STEP 1 — MARKET DATA (Primary Evidence)
 {quantitative_signals}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 2 — SUPPORTING EVIDENCE (News Articles)
+STEP 2 — DATA AVAILABILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{data_quality}
+
+For each item marked ❌ (missing) or ⚠ (partial), apply the following analytical consequences when scoring conviction components:
+
+❌ ETF Flows (SLV actual)
+   → Consequence: Institutional positioning cannot be confirmed; ETF driver confidence capped at Medium.
+
+❌ COT Positioning
+   → Consequence: Speculative long/short positioning unknown; cannot assess whether move is driven by commercials or speculators.
+
+❌ COMEX Inventories
+   → Consequence: Physical supply assessment incomplete; supply risk rating relies on news-only evidence.
+
+❌ Real Yields
+   → Consequence: Cannot calculate true opportunity cost of holding silver vs TIPS; macro score adjusted for uncertainty.
+
+❌ Open Interest & Volume
+   → Consequence: Cannot confirm whether price moves are backed by volume conviction or thin-market noise.
+
+⚠ ETF Flows (volume proxy only)
+   → Proxy: SLV volume used as directional indicator only; magnitude of actual fund flows unknown.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — SUPPORTING EVIDENCE (News Articles)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {articles_text}
