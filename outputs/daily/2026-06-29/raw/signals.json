@@ -1,38 +1,38 @@
 {
   "silver": {
-    "price": 58.9,
-    "change": -0.15,
-    "change_pct": -0.26,
+    "price": 58.85,
+    "change": -0.2,
+    "change_pct": -0.34,
     "direction": "down",
     "significant_move": false,
     "vs_30d_high_pct": -23.7,
-    "vs_30d_low_pct": 1.5,
-    "rsi_14": 27.2,
+    "vs_30d_low_pct": 1.4,
+    "rsi_14": 27.1,
     "signal": "oversold",
     "volatility_30d": 46.7
   },
   "gold": {
-    "price": 4077.4,
-    "change_pct": -0.14,
+    "price": 4060.0,
+    "change_pct": -0.57,
     "direction": "down"
   },
   "ratio": {
-    "value": 69.2,
-    "vs_historical_avg": 4.2,
+    "value": 69.0,
+    "vs_historical_avg": 4.0,
     "signal": "silver_undervalued_vs_gold"
   },
   "dxy": {
-    "value": 101.27,
-    "change_pct": -0.1,
-    "change_bps": -10,
+    "value": 101.25,
+    "change_pct": -0.12,
+    "change_bps": -12,
     "direction": "down",
     "signal": "mildly_bullish_for_silver"
   },
   "us10y": {
-    "value": 4.37,
-    "change_pct": -0.46,
-    "change_bps": -2,
-    "direction": "down",
-    "signal": "mildly_bullish_for_silver"
+    "value": 4.38,
+    "change_pct": 0.23,
+    "change_bps": 1,
+    "direction": "up",
+    "signal": "mildly_bearish_for_silver"
   }
 }

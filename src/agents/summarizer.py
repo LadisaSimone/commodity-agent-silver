@@ -147,17 +147,17 @@ _PARTIAL_CONSEQUENCES = {
 def _format_data_quality_block(data_quality: dict, today: str) -> str:
     lines = [f"DATA AVAILABILITY — {today}"]
     for k in data_quality.get("available", []):
-        lines.append(f"✅ {_AVAILABLE_LABELS.get(k, k)}")
+        lines.append(f"[OK] {_AVAILABLE_LABELS.get(k, k)}")
     for k in data_quality.get("partial", []):
         label = _PARTIAL_LABELS.get(k, k)
         consequence = _PARTIAL_CONSEQUENCES.get(k)
         suffix = f" → {consequence}" if consequence else ""
-        lines.append(f"⚠ {label}{suffix}")
+        lines.append(f"[!] {label}{suffix}")
     for k in data_quality.get("missing", []):
         label = _MISSING_LABELS.get(k, k)
         consequence = _MISSING_CONSEQUENCES.get(k)
         suffix = f" → {consequence}" if consequence else ""
-        lines.append(f"❌ {label}{suffix}")
+        lines.append(f"[X] {label}{suffix}")
     lines.append("")
     reliability = data_quality.get("reliability", "MEDIUM")
     reason = data_quality.get("reliability_reason", "Core price data available").lower()

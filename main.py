@@ -56,7 +56,13 @@ def save_outputs(
     briefing_dir.mkdir(parents=True, exist_ok=True)
 
     (raw_dir / "prices.json").write_text(
-        json.dumps({"silver": silver, "gold": gold, "dxy": dxy, "us10y": us10y}, indent=2)
+        json.dumps({
+            "silver": silver,
+            "gold": gold,
+            "dxy": dxy,
+            "us10y": us10y,
+            "ratio": round(gold["price"] / silver["price"], 1),
+        }, indent=2)
     )
     (raw_dir / "news.json").write_text(json.dumps({"articles": articles}, indent=2))
     (raw_dir / "history.json").write_text(json.dumps(history, indent=2))

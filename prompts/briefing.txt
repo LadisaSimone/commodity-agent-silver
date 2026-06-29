@@ -18,7 +18,7 @@ STEP 2 — DATA AVAILABILITY
 
 {data_quality}
 
-Each ❌ and ⚠ line above already includes its analytical consequence after the →. Apply those consequences when scoring conviction components. The LIMITATIONS TODAY section in the briefing output (see below) must reproduce these lines verbatim.
+Each [X] and [!] line above already includes its analytical consequence after the →. Apply those consequences when scoring conviction components. The LIMITATIONS TODAY section in the briefing output (see below) must reproduce these lines verbatim.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 3 — SUPPORTING EVIDENCE (News Articles)
@@ -84,7 +84,7 @@ CONFIDENCE: High/Medium/Low — [one sentence]
 
 ## LIMITATIONS TODAY
 
-Copy every ❌ and ⚠ line (with its → consequence) from the DATA AVAILABILITY block above. One line per item. If all data is available, write "No data limitations today." This section is mandatory and must never be skipped.
+Copy every [X] and [!] line (with its → consequence) from the DATA AVAILABILITY block above. One line per item. If all data is available, write "No data limitations today." This section is mandatory and must never be skipped.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
