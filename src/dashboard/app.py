@@ -473,6 +473,14 @@ def generate_pdf(
             drivers.append("—")
         return drivers[:3]
 
+    def parse_driver_confidence(briefing: str, one_based_index: int) -> str:
+        m = re.search(rf'#\s*{one_based_index}\s+[A-Z]', briefing)
+        if not m:
+            return "Medium"
+        chunk = briefing[m.start(): m.start() + 300]
+        conf_m = re.search(r'Confidence:\s*(High|Medium|Low)', chunk, re.IGNORECASE)
+        return conf_m.group(1).capitalize() if conf_m else "Medium"
+
     _ETAG_COLORS = {
         "DATA":      NAVY_HEX,
         "TECHNICAL": TEAL_HEX,
@@ -571,8 +579,9 @@ def generate_pdf(
         _s("p_drvtitle", fontName="Helvetica-Bold", fontSize=10, textColor=NAVY, leading=13, spaceAfter=4),
     ))
     drivers = parse_drivers(briefing)  # returns list[str], already padded to 3
+    confidences = [parse_driver_confidence(briefing, i + 1) for i in range(3)]
 
-    drv_cells = [driver_card(i, name, "", "Medium") for i, name in enumerate(drivers)]
+    drv_cells = [driver_card(i, name, "", confidences[i]) for i, name in enumerate(drivers)]
     drv_tbl = Table([drv_cells], colWidths=[col3_w] * 3, rowHeights=[76])
     drv_tbl.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, -1), LGRAY),
@@ -777,12 +786,13 @@ def generate_pdf(
                     out.append(conviction_bar(sc_m.group(1), int(sc_m.group(2)), bar_w=130))
             return out
 
-        # limitations: simple ✅/⚠/❌ line list
+        # limitations: plain line list — never apply evidence tag detection
         if sec_mode == "limitations":
             for line in body.splitlines():
-                s = line.strip()
+                s = re.sub(r'^\[NEWS\]\s+', '', line.strip())
                 if not s or re.match(r'^[━─■=\-]{4,}$', s):
                     continue
+                s = re.sub(r'^[-*•]\s+', '', s)  # strip any bullet prefix
                 out.append(Paragraph(md_to_rl(s), s_body))
             return out
 
