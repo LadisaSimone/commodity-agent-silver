@@ -116,6 +116,7 @@ Impact: HIGH/MEDIUM/LOW | Confidence: High/Medium/Low | Evidence: ★★★★�
 - [NEWS] News confirmation: [Source] or "No corroborating news"
 
 Rules:
+- Driver names must never begin with their own evidence-type label. Write "MACRO UNCERTAINTY" not "MACRO MACRO UNCERTAINTY", "TECHNICAL OVERSOLD" not "TECHNICAL TECHNICAL OVERSOLD".
 - The quoted sentence must appear immediately after the header line, before any bullet points.
 - The quoted sentence must contain at least one specific number and explain WHY this driver matters today — not just what it is.
 - Impact HIGH/MEDIUM/LOW reflects evidence strength (quantitative signals present = HIGH eligible).
