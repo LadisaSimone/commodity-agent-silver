@@ -2,7 +2,7 @@ import io
 import json
 import re
 import sys
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
 import anthropic
@@ -1222,7 +1222,7 @@ _CSS = """
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
-.block-container { padding: 1rem 1.5rem 1rem 1.5rem !important; }
+.block-container { padding: 0.25rem 1.5rem 1rem 1.5rem !important; }
 
 /* sidebar */
 section[data-testid="stSidebar"] > div {
@@ -1395,18 +1395,6 @@ with st.sidebar:
     last_updated_slot = st.empty()
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ── header row ────────────────────────────────────────────────────────────────
-
-_now = datetime.now()
-_date_label = _now.strftime(f"%A, %B {_now.day}, %Y")
-st.markdown(
-    '<h1 style="color:#ffffff;font-size:1.6rem;font-weight:800;margin:2px 0 2px;'
-    'letter-spacing:-0.02em;line-height:1.2;">Silver Market Overview</h1>'
-    f'<div style="font-size:0.82rem;color:#4a5a72;margin-bottom:6px;">{_date_label}</div>',
-    unsafe_allow_html=True,
-)
-
-st.divider()
 
 # ── load / generate briefing ──────────────────────────────────────────────────
 
