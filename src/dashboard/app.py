@@ -1659,21 +1659,22 @@ with method_col:
         st.markdown("""
 <style>
 [data-testid="stDownloadButton"] button {
-    background: linear-gradient(135deg, #c0c0c0, #e8e8e8) !important;
+    background: linear-gradient(135deg, #d8d8d8, #ffffff) !important;
     color: #0a0a0a !important;
-    font-weight: 700 !important;
-    font-size: 0.95rem !important;
-    letter-spacing: 0.08em !important;
+    font-weight: 900 !important;
+    font-size: 1.1rem !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 0.6rem 1.5rem !important;
+    padding: 0.7rem 1.5rem !important;
+    box-shadow: 0 4px 25px rgba(255, 255, 255, 0.45) !important;
     width: 100% !important;
-    box-shadow: 0 4px 15px rgba(192, 192, 192, 0.25) !important;
 }
 [data-testid="stDownloadButton"] button:hover {
-    background: linear-gradient(135deg, #e8e8e8, #ffffff) !important;
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3) !important;
-    transform: translateY(-1px) !important;
+    background: linear-gradient(135deg, #efefef, #ffffff) !important;
+    box-shadow: 0 6px 30px rgba(255, 255, 255, 0.6) !important;
+    transform: translateY(-2px) !important;
 }
 </style>
 """, unsafe_allow_html=True)
