@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from config.settings import MODEL, OUTPUTS_DIR
 from src.analysis.signals import compute_price_signals, compute_data_quality, format_signals_for_prompt
-from src.agents.summarizer import summarize
+from src.agents.summarizer import summarize, reattach_links
 from src.fetchers.news import fetch_articles
 from src.fetchers.price import (
     fetch_silver_price,
@@ -151,6 +151,10 @@ def main() -> None:
         signals_text=signals_text,
         data_quality=data_quality,
     )
+
+    # Explicitly reattach links before saving so the disk file contains markdown links.
+    # (reattach_links is also called inside summarize(), but this makes the save-path explicit.)
+    briefing = reattach_links(briefing, articles)
 
     print_briefing(briefing, silver, gold)
     print("Scores:", scores)

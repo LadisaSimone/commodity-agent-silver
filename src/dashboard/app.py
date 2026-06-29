@@ -7,6 +7,7 @@ from pathlib import Path
 
 import anthropic
 from dotenv import load_dotenv
+import plotly.graph_objects as go
 import streamlit as st
 
 _root = Path(__file__).parent.parent.parent
@@ -28,41 +29,86 @@ from config.settings import MODEL, OUTPUTS_DIR
 # ── disk helpers ──────────────────────────────────────────────────────────────
 
 def load_latest_briefing() -> tuple[str | None, str | None, dict]:
-    files = sorted(Path(OUTPUTS_DIR).glob("briefing_*.txt"))
-    if not files:
-        return None, None, {}
-    f = files[-1]
-    date_str = f.stem.replace("briefing_", "")
-    raw = f.read_text()
-    briefing_text, scores = extract_scores(raw)
-    scores_file = Path(OUTPUTS_DIR) / f"scores_{date_str}.json"
-    if scores_file.exists():
-        try:
-            scores = json.loads(scores_file.read_text())
-        except Exception:
-            pass
-    return briefing_text, date_str, scores
+    today = date.today().isoformat()
+    _out = Path(OUTPUTS_DIR)
+
+    # Try flat file first (written by save_outputs as backward-compat)
+    flat_files = sorted(_out.glob("briefing_*.txt"))
+    if flat_files:
+        f = flat_files[-1]
+        date_str = f.stem.replace("briefing_", "")
+        raw = f.read_text()
+        briefing_text, scores = extract_scores(raw)
+        scores_file = _out / f"scores_{date_str}.json"
+        if scores_file.exists():
+            try:
+                scores = json.loads(scores_file.read_text())
+            except Exception:
+                pass
+        return briefing_text, date_str, scores
+
+    # Fall back to daily structured path
+    daily_briefing = _out / "daily" / today / "briefing" / "briefing.txt"
+    if daily_briefing.exists():
+        raw = daily_briefing.read_text()
+        briefing_text, scores = extract_scores(raw)
+        scores_file = _out / "daily" / today / "briefing" / "scores.json"
+        if scores_file.exists():
+            try:
+                scores = json.loads(scores_file.read_text())
+            except Exception:
+                pass
+        return briefing_text, today, scores
+
+    return None, None, {}
 
 
 def load_latest_prices() -> tuple[dict, dict, dict, dict] | None:
-    files = sorted(Path(OUTPUTS_DIR).glob("prices_*.json"))
-    if not files:
-        return None
-    try:
-        data = json.loads(files[-1].read_text())
-        return data["silver"], data["gold"], data["dxy"], data["us10y"]
-    except Exception:
-        return None
+    today = date.today().isoformat()
+    _out = Path(OUTPUTS_DIR)
+
+    # Try flat file first
+    flat_files = sorted(_out.glob("prices_*.json"))
+    if flat_files:
+        try:
+            data = json.loads(flat_files[-1].read_text())
+            return data["silver"], data["gold"], data["dxy"], data["us10y"]
+        except Exception:
+            pass
+
+    # Fall back to daily structured path
+    daily_prices = _out / "daily" / today / "raw" / "prices.json"
+    if daily_prices.exists():
+        try:
+            data = json.loads(daily_prices.read_text())
+            return data["silver"], data["gold"], data["dxy"], data["us10y"]
+        except Exception:
+            pass
+
+    return None
 
 
 def load_latest_history() -> list[dict]:
-    files = sorted(Path(OUTPUTS_DIR).glob("history_*.json"))
-    if not files:
-        return []
-    try:
-        return json.loads(files[-1].read_text())
-    except Exception:
-        return []
+    today = date.today().isoformat()
+    _out = Path(OUTPUTS_DIR)
+
+    # Try flat file first
+    flat_files = sorted(_out.glob("history_*.json"))
+    if flat_files:
+        try:
+            return json.loads(flat_files[-1].read_text())
+        except Exception:
+            pass
+
+    # Fall back to daily structured path
+    daily_history = _out / "daily" / today / "raw" / "history.json"
+    if daily_history.exists():
+        try:
+            return json.loads(daily_history.read_text())
+        except Exception:
+            pass
+
+    return []
 
 
 def run_and_save() -> tuple[str, dict, dict, dict, dict, dict, list[dict]]:
@@ -91,6 +137,22 @@ def run_and_save() -> tuple[str, dict, dict, dict, dict, dict, list[dict]]:
 
 def escape_dollars(text: str) -> str:
     return text.replace('$', r'\$')
+
+
+def escape_dollars_safe(text: str) -> str:
+    """Escape $ signs in display text but leave markdown link URLs untouched."""
+    links: dict[str, str] = {}
+
+    def protect(m: re.Match) -> str:
+        key = f"LINK{len(links)}LINK"
+        links[key] = m.group(0)
+        return key
+
+    protected = re.sub(r'\[([^\]]+)\]\([^)]+\)', protect, text)
+    escaped = protected.replace('$', r'\$')
+    for key, val in links.items():
+        escaped = escaped.replace(key, val)
+    return escaped
 
 
 def add_section_dividers(text: str) -> str:
@@ -846,10 +908,52 @@ def svg_sparkline(closes: list[float], width: int = 80, height: int = 30) -> str
     )
 
 
+def render_silver_chart(history: list[dict]) -> go.Figure:
+    dates = [h.get("date", "") for h in history]
+    closes = [h.get("close", 0) for h in history]
+    color = "#00d4aa" if closes[-1] >= closes[0] else "#ff4757"
+    high_30d = max(closes)
+    low_30d = min(closes)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=dates,
+        y=closes,
+        mode="lines",
+        line=dict(color=color, width=2),
+        hovertemplate="$%{y:.2f}<extra></extra>",
+    ))
+    fig.add_hline(y=high_30d, line_dash="dot", line_color="#1a2035", line_width=1)
+    fig.add_hline(y=low_30d, line_dash="dot", line_color="#1a2035", line_width=1)
+    fig.update_layout(
+        xaxis=dict(
+            showgrid=False,
+            showticklabels=True,
+            tickformat="%b %d",
+            tickfont=dict(color="#5a6a7e", size=10),
+            tickcolor="#5a6a7e",
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="#1a2035",
+            showticklabels=True,
+            tickformat="$,.2f",
+            tickfont=dict(color="#5a6a7e", size=10),
+            tickcolor="#5a6a7e",
+            side="right",
+        ),
+        height=200,
+        margin=dict(l=0, r=60, t=20, b=30),
+        paper_bgcolor="#0a0e1a",
+        plot_bgcolor="#0a0e1a",
+    )
+    return fig
+
+
 def parse_story_list(briefing: str) -> list[dict]:
     section = extract_top_stories(briefing) or briefing
     stories = []
-    for m in re.finditer(r"\d+\.\s+\[([^\]]+)\]\(([^)]+)\)\s*[—–\-]+\s*(.+)", section):
+    for m in re.finditer(r"\d+\.\s+\[([^\]]+)\]\(([^)]*(?:\([^)]*\))*[^)]*)\)\s*[—–\-]+\s*(.+)", section):
         title, url, reason = m.group(1), m.group(2), m.group(3).strip()
         combined = (title + " " + reason).lower()
         if any(k in combined for k in ("fund", "etf", "trust", "holding")):
@@ -1049,16 +1153,6 @@ st.markdown(_CSS, unsafe_allow_html=True)
 
 # ── sidebar ───────────────────────────────────────────────────────────────────
 
-_NAV_ITEMS = [
-    ("Overview", True),
-    ("News & Events", False),
-    ("Drivers", False),
-    ("Macro", False),
-    ("Supply Risk", False),
-    ("Reports", False),
-    ("Alerts", False),
-]
-
 with st.sidebar:
     st.markdown(
         '<div style="padding:20px 16px 14px;border-bottom:1px solid #1a2035;">'
@@ -1068,39 +1162,8 @@ with st.sidebar:
         '</div>',
         unsafe_allow_html=True,
     )
-    st.markdown('<div style="padding:8px 0;">', unsafe_allow_html=True)
-    for label, active in _NAV_ITEMS:
-        if active:
-            st.markdown(
-                f'<div style="padding:9px 16px;background:#1a2035;border-left:3px solid #00d4aa;'
-                f'font-size:0.82rem;font-weight:700;color:#ffffff;margin:1px 0;">{label}</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                f'<div style="padding:9px 16px;font-size:0.82rem;color:#8a9ab5;'
-                f'opacity:0.4;margin:1px 0;">{label}</div>',
-                unsafe_allow_html=True,
-            )
-    st.markdown(
-        '<div style="padding:9px 16px;font-size:0.82rem;color:#8a9ab5;opacity:0.4;margin:1px 0;'
-        'display:flex;align-items:center;gap:7px;">Ask the Analyst'
-        '<span style="background:#2d1a4a;color:#c084fc;font-size:0.6rem;font-weight:700;'
-        'padding:1px 6px;border-radius:3px;letter-spacing:0.05em;">BETA</span>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div style="padding:12px 16px;border-top:1px solid #1a2035;">', unsafe_allow_html=True)
+    st.markdown('<div style="padding:12px 16px;margin-top:4px;">', unsafe_allow_html=True)
     last_updated_slot = st.empty()
-    st.markdown(
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;">'
-        '<div style="width:7px;height:7px;border-radius:50%;background:#00d4aa;'
-        'box-shadow:0 0 4px #00d4aa;"></div>'
-        '<div style="font-size:0.7rem;color:#4a5a72;">Auto-refresh in 60s</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ── header row ────────────────────────────────────────────────────────────────
@@ -1209,76 +1272,49 @@ if silver is not None:
             unsafe_allow_html=True,
         )
 
-st.markdown('<div style="margin-top:14px;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="margin-top:8px;"></div>', unsafe_allow_html=True)
 
-# ── main 60/40 layout ─────────────────────────────────────────────────────────
+# ── Row 4: 30-day chart + Market Snapshot ────────────────────────────────────
 
-left_col, right_col = st.columns([3, 2])
+chart_col, snap_col = st.columns([13, 7])
 
-with left_col:
-    # ── top news card ─────────────────────────────────────────────────────────
-    stories = parse_story_list(briefing)
-
-    news_rows = []
-    if stories:
-        for i, s in enumerate(stories):
-            impact_color = "#ff4757" if i < 2 else "#ffa500"
-            impact_label = "High" if i < 2 else "Medium"
-            border = "border-top:1px solid #1a2035;" if i > 0 else ""
-            news_rows.append(
-                f'<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;{border}">'
-                f'<div style="font-size:1.4rem;font-weight:800;color:#1a2540;min-width:22px;'
-                f'line-height:1;margin-top:2px;">{i + 1}</div>'
-                f'<div style="width:9px;height:9px;border-radius:50%;background:{s["cat_color"]};'
-                f'flex-shrink:0;margin-top:5px;"></div>'
-                f'<div style="flex:1;min-width:0;">'
-                f'<div style="font-size:0.82rem;color:#c8d4e8;font-weight:600;line-height:1.35;'
-                f'margin-bottom:3px;">'
-                f'<a href="{s["url"]}" target="_blank" style="color:inherit;text-decoration:none;">'
-                f'{s["title"]}</a></div>'
-                f'<div style="font-size:0.72rem;color:#4a5a72;margin-bottom:5px;line-height:1.4;">'
-                f'{s["reason"][:120]}{"…" if len(s["reason"]) > 120 else ""}</div>'
-                f'<div style="display:flex;align-items:center;gap:8px;">'
-                f'<span style="background:#1a2035;color:{s["cat_color"]};font-size:0.6rem;'
-                f'font-weight:700;padding:1px 7px;border-radius:3px;letter-spacing:0.04em;">'
-                f'{s["category"]}</span>'
-                f'<span style="font-size:0.67rem;color:#2d3f5a;">Today</span>'
-                f'<span style="font-size:0.67rem;color:{impact_color};font-weight:700;">{impact_label}</span>'
-                f'</div></div></div>'
-            )
-    else:
-        top_raw = extract_top_stories(briefing)
-        news_rows.append(
-            f'<div style="font-size:0.82rem;color:#8a9ab5;padding:8px 0;">'
-            f'{top_raw if top_raw else "No top stories extracted."}'
-            f'</div>'
-        )
-
+with chart_col:
     st.markdown(
-        '<div style="background:#0d1117;border:1px solid #1a2035;border-radius:6px;'
-        'padding:18px 20px;margin-bottom:14px;">'
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">'
         '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
-        'letter-spacing:0.09em;">Top News by Impact</div>'
-        '<span style="font-size:0.7rem;color:#2d3f5a;cursor:help;" '
-        'title="Top 5 most market-impactful stories from today\'s news feed">(?)</span>'
-        '</div>'
-        + "".join(news_rows) +
-        '<div style="padding-top:10px;border-top:1px solid #1a2035;margin-top:4px;">'
-        '<span style="font-size:0.75rem;color:#4a5a72;cursor:pointer;">View all news →</span>'
-        '</div>'
-        '</div>',
+        'letter-spacing:0.09em;margin-bottom:6px;">Silver Price — 30 Days</div>',
         unsafe_allow_html=True,
     )
+    if history:
+        st.plotly_chart(render_silver_chart(history), use_container_width=True)
+    else:
+        st.markdown(
+            '<div style="background:#0d1117;border:1px solid #1a2035;border-radius:6px;'
+            'padding:30px 18px;color:#4a5a72;font-size:0.8rem;text-align:center;">'
+            'Refresh to load chart data</div>',
+            unsafe_allow_html=True,
+        )
 
-with right_col:
-    # ── market snapshot card ──────────────────────────────────────────────────
+with snap_col:
+    # ── Market Snapshot ───────────────────────────────────────────────────────
     reasons = extract_component_reasons(briefing)
+
+    _rsi_m = re.search(r"RSI[- ]?(?:14)?[:\s]+([0-9.]+)", briefing, re.IGNORECASE)
+    _rsi = float(_rsi_m.group(1)) if _rsi_m else 50.0
+    _rsi_label = "oversold" if _rsi < 30 else ("overbought" if _rsi > 70 else "neutral")
+
+    _macro_score = int(scores.get("macro", 5))
+    _tech_score  = int(scores.get("technicals", 5))
+    _sent_score  = int(scores.get("sentiment", 5))
+
     _snap_rows = [
-        ("Macro", score_to_status(int(scores.get("macro", 5))), reasons.get("macro", "")),
-        ("Technicals", score_to_status(int(scores.get("technicals", 5))), reasons.get("technicals", "")),
-        ("Supply Risk", supply_status(scores.get("supply_risk", "LOW")), reasons.get("supply_risk", extract_supply_risk_reason(briefing))),
-        ("Sentiment", score_to_status(int(scores.get("sentiment", 5))), reasons.get("sentiment", "")),
+        ("Macro",       score_to_status(_macro_score),
+         reasons.get("macro")      or f"Score {_macro_score}/10 — macro conditions"),
+        ("Technicals",  score_to_status(_tech_score),
+         reasons.get("technicals") or f"RSI {_rsi:.0f} — {_rsi_label}"),
+        ("Supply Risk", supply_status(scores.get("supply_risk", "LOW")),
+         reasons.get("supply_risk") or extract_supply_risk_reason(briefing) or "No disruptions detected"),
+        ("Sentiment",   score_to_status(_sent_score),
+         reasons.get("sentiment")  or f"Score {_sent_score}/10 — mixed signals"),
     ]
 
     snap_row_html = ""
@@ -1327,61 +1363,12 @@ with right_col:
         unsafe_allow_html=True,
     )
 
-    # ── watchlist card ────────────────────────────────────────────────────────
-    _events = [
-        ("14:30", "US Core PCE Price Index (MoM)", "High"),
-        ("14:30", "US Personal Income (MoM)", "Medium"),
-        ("16:00", "Fed Chair Powell Speech", "High"),
-        ("22:30", "China Manufacturing PMI", "Medium"),
-        ("All Day", "OPEC+ Meeting", "Medium"),
-    ]
-
-    def _dots(level: str) -> str:
-        if level == "High":
-            return '<span style="color:#ff4757;letter-spacing:1px;">●●●</span>'
-        return '<span style="color:#ffa500;letter-spacing:1px;">●●</span><span style="color:#2d3f5a;letter-spacing:1px;">●</span>'
-
-    event_rows_html = ""
-    for i, (t, evt, imp) in enumerate(_events):
-        border = "border-top:1px solid #0f1525;" if i > 0 else ""
-        event_rows_html += (
-            f'<div style="display:flex;align-items:center;padding:7px 0;{border}">'
-            f'<div style="font-size:0.72rem;color:#4a5a72;font-family:\'SF Mono\',monospace;width:58px;flex-shrink:0;">{t}</div>'
-            f'<div style="font-size:0.75rem;color:#c8d4e8;flex:1;">{evt}</div>'
-            f'<div style="width:46px;text-align:center;font-size:0.65rem;">{_dots(imp)}</div>'
-            f'</div>'
-        )
-
-    st.markdown(
-        '<div style="background:#0d1117;border:1px solid #1a2035;border-radius:6px;padding:18px 20px;">'
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">'
-        '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
-        'letter-spacing:0.09em;">Today\'s Watchlist</div>'
-        '<span style="font-size:0.7rem;color:#2d3f5a;cursor:help;" '
-        'title="Key scheduled events for today">(?)</span>'
-        '</div>'
-        '<div style="display:flex;padding-bottom:6px;border-bottom:1px solid #1a2035;margin-bottom:2px;">'
-        '<div style="font-size:0.6rem;color:#2d3f5a;font-weight:600;text-transform:uppercase;'
-        'letter-spacing:0.07em;width:58px;">TIME (UTC)</div>'
-        '<div style="font-size:0.6rem;color:#2d3f5a;font-weight:600;text-transform:uppercase;'
-        'letter-spacing:0.07em;flex:1;">EVENT</div>'
-        '<div style="font-size:0.6rem;color:#2d3f5a;font-weight:600;text-transform:uppercase;'
-        'letter-spacing:0.07em;width:46px;text-align:center;">IMPACT</div>'
-        '</div>'
-        + event_rows_html +
-        '<div style="padding-top:10px;border-top:1px solid #1a2035;margin-top:4px;">'
-        '<span style="font-size:0.75rem;color:#4a5a72;cursor:pointer;">View full calendar →</span>'
-        '</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-# ── full-width section: AI Morning Brief + methodology + PDF ─────────────────
+# ── Row 5: AI Morning Brief ───────────────────────────────────────────────────
 
 verdict = scores.get("verdict", "Analysis generated from market signals and news flow.")
 
 st.markdown(f"""
-<div style="background:#0d1117;border:1px solid #1a5e3a;border-radius:12px;padding:24px 32px;margin:24px 0 16px;">
+<div style="background:#0d1117;border:1px solid #1a5e3a;border-radius:12px;padding:24px 32px;margin:16px 0 12px;">
     <div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">
         AI Morning Brief — {briefing_date}
     </div>
@@ -1391,24 +1378,47 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-_, center_col, _ = st.columns([1, 2, 1])
-with center_col:
-    st.markdown("""
-    <div style="background:#0d1f0d;border:1px solid #1a5e3a;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:0.78rem;color:#8ab58a;line-height:1.8;text-align:left;">
-    <strong style="color:#00d4aa;">How this analysis is generated</strong><br>
-    ① Live prices fetched from Yahoo Finance (Silver, Gold, DXY, US10Y)<br>
-    ② Signals computed: RSI-14, 30d volatility, significant move detection<br>
-    ③ 30 news articles ingested from Google News, Reuters, Kitco<br>
-    ④ Claude reasons from data first, news second<br>
-    ⑤ Conviction scores extracted as structured JSON
-    </div>
-    """, unsafe_allow_html=True)
+# ── Row 6: Full Analysis + Methodology (fixed-height columns) ────────────────
+
+analysis_col, method_col = st.columns([3, 2])
+
+with analysis_col:
+    st.markdown(
+        '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:6px;">Full Analysis</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div style="height:420px;overflow-y:auto;background:#0d1117;border:1px solid #1a2035;'
+        'border-radius:8px;padding:16px 20px;">'
+        + escape_dollars_safe(briefing)
+        + '</div>',
+        unsafe_allow_html=True,
+    )
+
+with method_col:
+    st.markdown(
+        '<div style="font-size:0.65rem;font-weight:700;color:#4a5a72;text-transform:uppercase;'
+        'letter-spacing:0.09em;margin-bottom:6px;">About This Report</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div style="height:340px;background:#0d1117;border:1px solid #1a5e3a;border-radius:8px;'
+        'padding:16px 20px;margin-bottom:12px;">'
+        '<p style="color:#00d4aa;font-weight:600;margin-bottom:12px;font-size:0.85rem;">'
+        'How this analysis is generated</p>'
+        '<div style="font-size:0.78rem;color:#8ab58a;line-height:1.9;">'
+        '① Live prices fetched from Yahoo Finance (Silver, Gold, DXY, US10Y)<br>'
+        '② Signals computed: RSI-14, 30d volatility, significant move detection<br>'
+        '③ 20 news articles ingested from Google News, Reuters, Kitco<br>'
+        '④ Claude reasons from data first, news second<br>'
+        '⑤ Conviction scores extracted as structured JSON'
+        '</div></div>',
+        unsafe_allow_html=True,
+    )
     if silver is not None:
         pdf_bytes = generate_pdf(briefing=briefing, silver=silver, gold=gold, briefing_date=briefing_date or "", scores=scores, dxy=dxy, us10y=us10y)
         st.download_button("⬇ Download Full Briefing PDF", data=pdf_bytes, file_name=f"silver_briefing_{briefing_date}.pdf", mime="application/pdf", use_container_width=True)
-
-with st.expander("View full analysis"):
-    st.markdown('<div class="briefing-content">' + escape_dollars(briefing) + '</div>', unsafe_allow_html=True)
 
 # ── footer ────────────────────────────────────────────────────────────────────
 

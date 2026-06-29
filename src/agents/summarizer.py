@@ -44,30 +44,88 @@ def strip_urls(text: str) -> str:
     return text
 
 
+_DOMAIN_MAP = {
+    "kitco":        "kitco.com",
+    "fxempire":     "fxempire.com",
+    "reuters":      "reuters.com",
+    "cnbc":         "cnbc.com",
+    "seekingalpha": "seekingalpha.com",
+    "coindesk":     "coindesk.com",
+    "bloomberg":    "bloomberg.com",
+    "goldprice":    "goldprice.org",
+    "investing":    "investing.com",
+    "marketwatch":  "marketwatch.com",
+    "wsj":          "wsj.com",
+    "ft":           "ft.com",
+    "zerohedge":    "zerohedge.com",
+    "silverdoctors": "silverdoctors.com",
+    "pvmagazine":    "pv-magazine.com",
+    "pvmagazineusa": "pv-magazine-usa.com",
+    "magazineusa":   "pv-magazine-usa.com",
+}
+
+
 def reattach_links(briefing: str, articles: list[dict]) -> str:
-    url_lookup = [
+    article_urls = [a.get("url", "") for a in articles if a.get("url")]
+    title_lookup = [
         (a["title"].lower(), a.get("url", ""))
         for a in articles
         if a.get("url")
     ]
 
     def find_url(source_name: str) -> str | None:
+        # Strip trailing date suffix e.g. "KITCO, 26 Jun" → "KITCO"
+        source_clean = re.sub(r',?\s*\d{1,2}\s+\w+$', '', source_name).strip()
+        key = re.sub(r'\W+', '', source_clean.lower())
+        source_lower = source_clean.lower()
+
+        # Pass 1 — domain matching
+        domain = _DOMAIN_MAP.get(key)
+        if domain:
+            for url in article_urls:
+                if domain in url:
+                    return url
+        # Also try the raw key as a domain fragment if not in the map
+        for url in article_urls:
+            if key and key in url.lower():
+                return url
+
+        # Pass 2 — title keyword fallback (2+ word matches)
         words = [w for w in re.split(r'\W+', source_name.lower()) if len(w) > 2]
-        best_url, best_count = None, 1  # require at least 2 matching words
-        for title, url in url_lookup:
+        best_url, best_count = None, 1
+        for title, url in title_lookup:
             count = sum(1 for w in words if w in title)
             if count >= 2 and count > best_count:
                 best_count = count
                 best_url = url
-        return best_url
+        if best_url:
+            return best_url
+
+        # Pass 3 — source name substring in article title
+        # Handles RSS patterns like "Gold & silver update — KITCO" where domain matching fails
+        for article in articles:
+            title = article.get("title", "").lower()
+            if source_lower in title or key in title:
+                return article.get("url", "")
+
+        return None
 
     def replace_match(m: re.Match) -> str:
         source_name = m.group(1)
         url = find_url(source_name)
+        if url:
+            url = url.split('?')[0] if '?' in url else url
         return f"[{source_name}]({url})" if url else m.group(0)
 
     # Only replace bare [Text] — skip already-linked [Text](url)
-    return re.sub(r'\[([^\]]+)\](?!\()', replace_match, briefing)
+    result = re.sub(r'\[([^\]]+)\](?!\()', replace_match, briefing)
+
+    # Cleanup: remove (url) not preceded by ] — malformed link remnants
+    result = re.sub(r'(?<!\])\(https?://[^)]+\)', '', result)
+    # Remove any remaining bare URLs not in markdown link format
+    result = re.sub(r'(?<!\()\bhttps?://\S+', '', result)
+
+    return result
 
 
 def _format_data_quality_block(data_quality: dict, today: str) -> str:

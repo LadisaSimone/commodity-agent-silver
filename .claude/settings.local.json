@@ -14,7 +14,9 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/simoneladisa/Documents/projects/commodity-agent-silver/notebooks/test_data.ipynb'\\)\\); print\\('valid JSON'\\)\")"
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/simoneladisa/Documents/projects/commodity-agent-silver/notebooks/test_data.ipynb'\\)\\); print\\('valid JSON'\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/simoneladisa/Documents/projects/commodity-agent-silver/src/dashboard/app.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(python3 -)"
     ]
   }
 }
