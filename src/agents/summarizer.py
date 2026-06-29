@@ -73,10 +73,14 @@ def reattach_links(briefing: str, articles: list[dict]) -> str:
         if a.get("url")
     ]
 
+    _RESERVED_LABELS = {"data", "technical", "macro", "news", "inference", "newsonly"}
+
     def find_url(source_name: str) -> str | None:
         # Strip trailing date suffix e.g. "KITCO, 26 Jun" → "KITCO"
         source_clean = re.sub(r',?\s*\d{1,2}\s+\w+$', '', source_name).strip()
         key = re.sub(r'\W+', '', source_clean.lower())
+        if key in _RESERVED_LABELS:
+            return None
         source_lower = source_clean.lower()
 
         # Pass 1 — domain matching
@@ -185,10 +189,27 @@ def _build_fallback_signals(silver: dict, gold: dict, dxy: dict | None, us10y: d
 
 
 def extract_scores(briefing_text: str) -> tuple[str, dict]:
-    lines = briefing_text.splitlines()
+    # Pre-processing: collapse ```json\n{...}\n``` into a bare JSON line
+    clean = re.sub(r'^```json\s*\n', '', briefing_text.strip())
+    clean = re.sub(r'\n```\s*$', '', clean)
+
+    # Fast path: first line is raw JSON
+    first_line = clean.split('\n')[0].strip()
+    if first_line.startswith('{') and '"conviction"' in first_line:
+        try:
+            data = json.loads(first_line)
+            scores = {**_DEFAULT_SCORES, **data.get("conviction", {})}
+            remaining = '\n'.join(clean.split('\n')[1:]).strip()
+            return remaining, scores
+        except json.JSONDecodeError:
+            pass
+
+    lines = clean.splitlines()
 
     def _try_parse(i: int) -> dict | None:
         line = lines[i].strip()
+        line = re.sub(r'^```json\s*', '', line)
+        line = re.sub(r'```\s*$', '', line).strip()
         if '"conviction"' not in line:
             return None
         try:
@@ -197,11 +218,10 @@ def extract_scores(briefing_text: str) -> tuple[str, dict]:
         except (json.JSONDecodeError, KeyError, ValueError):
             return None
 
-    # Search first 10 lines (JSON-first format)
-    for i in range(min(10, len(lines))):
+    # Search first 5 lines (JSON-first format)
+    for i in range(min(5, len(lines))):
         scores = _try_parse(i)
         if scores is not None:
-            # Remove the JSON line (and any immediately following blank line) from briefing
             rest_start = i + 1
             while rest_start < len(lines) and not lines[rest_start].strip():
                 rest_start += 1
@@ -214,7 +234,7 @@ def extract_scores(briefing_text: str) -> tuple[str, dict]:
         if scores is not None:
             return "\n".join(lines[:i]).rstrip(), scores
 
-    return briefing_text, dict(_DEFAULT_SCORES)
+    return clean, dict(_DEFAULT_SCORES)
 
 
 def summarize(

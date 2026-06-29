@@ -1,10 +1,10 @@
 {
-  "macro": 6,
-  "technicals": 7,
+  "macro": 7,
+  "technicals": 8,
   "sentiment": 5,
   "etf_flows": 3,
   "industrial_demand": 4,
   "overall": 5,
-  "verdict": "Silver RSI at 27.2 signals deep oversold conditions after a 23.7% drawdown, but macro headwinds from 4.37% yields and weak industrial signals limit conviction for sustained recovery.",
-  "supply_risk": "LOW"
+  "verdict": "Silver RSI at 27.2 signals mechanical oversold after 23.7% drawdown, but elevated 4.37% US10Y yields and 69.2 gold-silver ratio cap bullish conviction. Technical mean reversion competes with macro headwinds.",
+  "supply_risk": "MEDIUM"
 }
