@@ -1146,7 +1146,7 @@ def render_silver_chart(history: list[dict]) -> go.Figure:
             tickcolor="#5a6a7e",
             side="right",
         ),
-        height=200,
+        height=220,
         margin=dict(l=0, r=60, t=20, b=30),
         paper_bgcolor="#0a0e1a",
         plot_bgcolor="#0a0e1a",
@@ -1338,6 +1338,22 @@ div[data-testid="stDownloadButton"] button:hover {
 
 /* hide plotly modebar */
 .js-plotly-plot .modebar { display: none !important; }
+
+/* ── compact layout ──────────────────────────────────────────────────── */
+html, body, [class*="css"] { font-size: 13px !important; }
+
+[data-testid="metric-container"] { padding: 0.3rem 0.5rem !important; }
+[data-testid="stMetricValue"] { font-size: 1.4rem !important; }
+[data-testid="stMetricDelta"] { font-size: 0.75rem !important; }
+
+[data-testid="block-container"] { padding-top: 1rem !important; padding-bottom: 0.5rem !important; }
+.element-container { margin-bottom: 0.25rem !important; }
+
+[data-testid="stSidebar"] { font-size: 0.8rem !important; }
+
+h1 { font-size: 1.3rem !important; margin-bottom: 0.3rem !important; }
+h2 { font-size: 1.1rem !important; margin-bottom: 0.2rem !important; }
+h3 { font-size: 1rem !important; margin-bottom: 0.2rem !important; }
 </style>
 """
 
