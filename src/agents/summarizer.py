@@ -128,14 +128,32 @@ def reattach_links(briefing: str, articles: list[dict]) -> str:
     return result
 
 
+_MISSING_CONSEQUENCES = {
+    "slv_actual_flows":  "Institutional positioning unconfirmed; ETF driver confidence capped at Medium.",
+    "comex_inventory":   "Physical supply assessment incomplete; supply risk relies on news-only evidence.",
+    "cot_positioning":   "Speculative long/short ratio unknown; cannot distinguish commercial vs speculative selling.",
+    "open_interest":     "Cannot confirm if price moves are backed by volume conviction or thin-market noise.",
+    "real_yields":       "True opportunity cost of silver vs TIPS unknown; macro score adjusted for uncertainty.",
+}
+_PARTIAL_CONSEQUENCES = {
+    "etf_flows_proxy":   "Directional indicator only; magnitude of actual fund flows unknown.",
+}
+
+
 def _format_data_quality_block(data_quality: dict, today: str) -> str:
     lines = [f"DATA AVAILABILITY — {today}"]
     for k in data_quality.get("available", []):
         lines.append(f"✅ {_AVAILABLE_LABELS.get(k, k)}")
     for k in data_quality.get("partial", []):
-        lines.append(f"⚠ {_PARTIAL_LABELS.get(k, k)}")
+        label = _PARTIAL_LABELS.get(k, k)
+        consequence = _PARTIAL_CONSEQUENCES.get(k)
+        suffix = f" → {consequence}" if consequence else ""
+        lines.append(f"⚠ {label}{suffix}")
     for k in data_quality.get("missing", []):
-        lines.append(f"❌ {_MISSING_LABELS.get(k, k)}")
+        label = _MISSING_LABELS.get(k, k)
+        consequence = _MISSING_CONSEQUENCES.get(k)
+        suffix = f" → {consequence}" if consequence else ""
+        lines.append(f"❌ {label}{suffix}")
     lines.append("")
     reliability = data_quality.get("reliability", "MEDIUM")
     reason = data_quality.get("reliability_reason", "Core price data available").lower()

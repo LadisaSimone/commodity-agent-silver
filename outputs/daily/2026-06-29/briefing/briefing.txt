@@ -1,16 +1,27 @@
 ---
 
+## LIMITATIONS TODAY
+
+⚠ ETF Flow Data (SLV volume proxy only — not actual fund flows) → Directional indicator only; magnitude of actual fund flows unknown.
+❌ SLV Actual Flows (not available) → Institutional positioning unconfirmed; ETF driver confidence capped at Medium.
+❌ COMEX Inventories (not available) → Physical supply assessment incomplete; supply risk relies on news-only evidence.
+❌ COT Positioning (not available) → Speculative long/short ratio unknown; cannot distinguish commercial vs speculative selling.
+❌ Open Interest & Volume (not available) → Cannot confirm if price moves are backed by volume conviction or thin-market noise.
+❌ Real Yields (derived estimate only) → True opportunity cost of silver vs TIPS unknown; macro score adjusted for uncertainty.
+
+---
+
 ## TOP STORIES BY IMPACT
 
-1. Gold and Silver Price Forecast: NFP Data and Iran Talks Drive Next Breakout [FXEmpire](https://news.google.com/rss/articles/CBMiwwFBVV95cUxNanRjUk9KcjM5ZWthUXV5NW9pa1JiZVRQeEVMcU5OTmg3YU4tVUY0Nk9oZ01UaWpnWG54MUh1ZTctR1lVNWVNTGlwcjhzSUtVTi12TzFzNUZKeERyMWdsdnhMbkFYXzVnNDcweE9vN1phQ1dpYm1ROHBXb3RINHYxdEZ6WlN3NmVZZTdmQjJ1aG1BbkdJc3ZpYWRzRHFOcEgtZ2FvbDFPeW5LYnhDeFgtZFp6bkZLQXhQajZKRUNTUXd2V3M) — NFP data and Iran geopolitical tensions identified as primary catalysts for directional breakout beyond current $58.90 level.
+1. Gold & silver market update: Silver below $60, gold $4,100 test, ETF selling, Comex inventories, and Treasury gold rumors [KITCO](https://news.google.com/rss/articles/CBMitwFBVV95cUxOSnBsdUFSXzlka3FYNG85bTNoa01RbmFWLTdnMkF5QU5UU0JXV2gwc25obHRVZzNlWDc2QWxlTFlVNVBBNWJwVkZfWEpoRE1LRlVJNW56WFVLbF9OY1B2eEtHV05tbXotc3dyZWpRVzhkM3pTb3UyN1VheEkyQ3lCRjVRYlA3dlNiazVCN1hkMzNsY2I1Y0ZXOEVvcmxqUWlBNjBzRDJvbXBOcGE5ekd5cURCZzBmamM) — Direct reference to ETF selling pressure and inventory dynamics driving sub-$60 silver.
 
-2. Gold & silver market update: Silver below $60, gold $4,100 test, ETF selling, Comex inventories, and Treasury gold rumors [KITCO](https://news.google.com/rss/articles/CBMitwFBVV95cUxOSnBsdUFSXzlka3FYNG85bTNoa01RbmFWLTdnMkF5QU5UU0JXV2gwc25obHRVZzNlWDc2QWxlTFlVNVBBNWJwVkZfWEpoRE1LRlVJNW56WFVLbF9OY1B2eEtHV05tbXotc3dyZWpRVzhkM3pTb3UyN1VheEkyQ3lCRjVRYlA3dlNiazVCN1hkMzNsY2I1Y0ZXOEVvcmxqUWlBNjBzRDJvbXBOcGE5ekd5cURCZzBmamM) — ETF selling pressure and COMEX inventory dynamics directly cited as bearish drivers with silver below critical $60 support.
+2. Silver price falls to $57 an ounce as downward trend intensifies [pv magazine USA](https://news.google.com/rss/articles/CBMipgFBVV95cUxOcjExeDRCaXlHV3F4dnlwOVNIVTJUSXFvMTRnVUlqcjNMMGJYbDh1YUx3Ym9EQUZKWkVsdFZydXEzLXBRb0kxdVFkTlRQTHZtOF9kM2FNU2VIYnJ2RUFWWE9fcm16V0o0MThFM2laYmYtRXM0RjY5czFRZWZWcFdRaE1sMG43UnBSMkFXell5V0FpamttUTVXSHlRVGRnZDNlUXlMSlNn) — Confirms $57 level breach and solar sector headwinds from rising silver inventory oversupply.
 
-3. Silver price falls to $57 an ounce as downward trend intensifies [pv magazine USA](https://news.google.com/rss/articles/CBMipgFBVV95cUxOcjExeDRCaXlHV3F4dnlwOVNIVTJUSXFvMTRnVUlqcjNMMGJYbDh1YUx3Ym9EQUZKWkVsdFZydXEzLXBRb0kxdVFkTlRQTHZtOF9kM2FNU2VIYnJ2RUFWWE9fcm16V0o0MThFM2laYmYtRXM0RjY5czFRZWZWcFdRaE1sMG43UnBSMkFXell5V0FpamttUTVXSHlRVGRnZDNlUXlMSlNn) — Solar supply chain weakness cited as industrial demand headwind, with silver declining to $57 indicating extended downtrend.
+3. Cell market remains bearish as silver prices and rising inventories weigh on solar supply chain [Green Building Africa](https://news.google.com/rss/articles/CBMizwFBVV95cUxPNEZTWVdFdXlLT2FfSVBYbEhSdGpQME9PcWpGb3hfc3RlOEpCQzIzeEIyR0l5bkd1RVlna1ZoemEwUGJPY1VUWHdlbXpLVnBRTFhsXy10SWs2bWNJLUNnRE5mUnBIQUl2UFZBM1JTQm5fVUJkVnkwXzJjdlI4MUxWT3hKbnV1aVlaelhXaTByS25DczkzNmVhQkxGd3ZuV3VESnA3TGJEY1Vyb0JaaXRYczIzT1pVUVJWa1R0UE5jNWJpSV9aZnd5dXB0X256T2s) — Industrial demand weakness from solar sector amid inventory buildup signals structural demand erosion.
 
-4. Cell market remains bearish as silver prices and rising inventories weigh on solar supply chain [Green Building Africa](https://news.google.com/rss/articles/CBMizwFBVV95cUxPNEZTWVdFdXlLT2FfSVBYbEhSdGpQME9PcWpGb3hfc3RlOEpCQzIzeEIyR0l5bkd1RVlna1ZoemEwUGJPY1VUWHdlbXpLVnBRTFhsXy10SWs2bWNJLUNnRE5mUnBIQUl2UFZBM1JTQm5fVUJkVnkwXzJjdlI4MUxWT3hKbnV1aVlaelhXaTByS25DczkzNmVhQkxGd3ZuV3VESnA3TGJEY1Vyb0JaaXRYczIzT1pVUVJWa1R0UE5jNWJpSV9aZnd5dXB0X256T2s) — Rising silver inventories and weak cell market directly pressure solar demand, signaling industrial weakness.
+4. Gold and Silver Price Forecast: NFP Data and Iran Talks Drive Next Breakout [FXEmpire](https://news.google.com/rss/articles/CBMiwwFBVV95cUxNanRjUk9KcjM5ZWthUXV5NW9pa1JiZVRQeEVMcU5OTmg3YU4tVUY0Nk9oZ01UaWpnWG54MUh1ZTctR1lVNWVNTGlwcjhzSUtVTi12TzFzNUZKeERyMWdsdnhMbkFYXzVnNDcweE9vN1phQ1dpYm1ROHBXb3RINHYxdEZ6WlN3NmVZZTdmQjJ1aG1BbkdJc3ZpYWRzRHFOcEgtZ2FvbDFPeW5LYnhDeFgtZFp6bkZLQXhQajZKRUNTUXd2V3M) — Identifies NFP and geopolitical risk catalysts as primary drivers for directional moves ahead.
 
-5. Silver Price Forecast: Silver Pullback Sets Up Rebound Near $50 Support [FXEmpire](https://news.google.com/rss/articles/CBMiwwFBVV95cUxNanRjUk9KcjM5ZWthUXV5NW9pa1JiZVRQeEVMcU5OTmg3YU4tVUY0Nk9oZ01UaWpnWG54MUh1ZTctR1lVNWVNTGlwcjhzSUtVTi12TzFzNUZKeERyMWdsdnhMbkFYXzVnNDcweE9vN1phQ1dpYm1ROHBXb3RINHYxdEZ6WlN3NmVZZTdmQjJ1aG1BbkdJc3ZpYWRzRHFOcEgtZ2FvbDFPeW5LYnhDeFgtZFp6bkZLQXhQajZKRUNTUXd2V3M) — $50 support level identified as critical floor, implying further 15% downside risk if technical support breaks.
+5. Silver (XAG) Forecast: Silver Bounces but Fed Keeps Price Prediction Bearish [FXEmpire](https://news.google.com/rss/articles/CBMiwwFBVV95cUxNanRjUk9KcjM5ZWthUXV5NW9pa1JiZVRQeEVMcU5OTmg3YU4tVUY0Nk9oZ01UaWpnWG54MUh1ZTctR1lVNWVNTGlwcjhzSUtVTi12TzFzNUZKeERyMWdsdnhMbkFYXzVnNDcweE9vN1phQ1dpYm1ROHBXb3RINHYxdEZ6WlN3NmVZZTdmQjJ1aG1BbkdJc3ZpYWRzRHFOcEgtZ2FvbDFPeW5LYnhDeFgtZFp6bkZLQXhQajZKRUNTUXd2V3M) — Fed rate expectations remain a structural headwind despite bounce attempts from oversold levels.
 
 ---
 
@@ -19,35 +30,35 @@
 EVIDENCE:
 - Silver: $58.90 | -0.26% (-$0.15 intraday)
 - Gold: $4,077.40 | -0.14% (-$5.70 intraday)
-- Gold/Silver Ratio: 69.2 (historical avg ~65, +4.2 above baseline)
-- DXY: 101.27 | -0.10% (-10 basis points) — mildly weakening
-- US 10Y Yield: 4.37% | -2 bps — falling slightly
+- Gold/Silver Ratio: 69.2 (4.2 points above historical avg ~65)
+- DXY: 101.27 | -0.10% (-10 basis points) — marginally weakening
+- US 10Y Yield: 4.37% | -2 bps — marginally falling
 
-INTERPRETATION: Silver's -23.7% decline from 30-day highs combined with RSI of 27.2 indicates deep oversold technical positioning, but mildly bullish macro conditions (weaker dollar, falling yields) offer limited offset against sustained downward momentum.
+INTERPRETATION: Silver's -23.7% drawdown from 30-day highs and RSI 27.2 indicate deep oversold conditions, yet elevated 10Y yields at 437 bps and an expanded gold-silver ratio of 69.2 suggest macro headwinds persist despite intraday stabilization.
 
-CONFIDENCE: Medium — RSI and drawdown are quantitatively confirmed, but magnitude of intraday moves below 1% suggests low conviction in either direction; missing COT and open interest data prevents assessment of whether technical extremes are driven by speculative or commercial positioning.
+CONFIDENCE: Medium — Directional technicals are clear (RSI, drawdown magnitude), but macro regime lacks corroborating COT or real-yield data to confirm whether oversold conditions represent capitulation or intermediate weakness.
 
 ---
 
 ## RANKED MARKET DRIVERS
 
 ### #1 TECHNICAL OVERSOLD CONDITIONS (Primary)
-- RSI-14 at 27.2 (oversold <30 threshold) with 23.7% decline from 30-day highs ($76.90 to $58.90)
-- No corroborating news signal on mean reversion; multiple articles cite "downward trend intensifies" contradicting oversold rebound narrative
+- RSI-14 at 27.2 (well below 30 oversold threshold); 23.7% drawdown from 30d highs
+- Multiple news articles confirm extended selloff: "Silver below $60" [KITCO](https://news.google.com/rss/articles/CBMitwFBVV95cUxOSnBsdUFSXzlka3FYNG85bTNoa01RbmFWLTdnMkF5QU5UU0JXV2gwc25obHRVZzNlWDc2QWxlTFlVNVBBNWJwVkZfWEpoRE1LRlVJNW56WFVLbF9OY1B2eEtHV05tbXotc3dyZWpRVzhkM3pTb3UyN1VheEkyQ3lCRjVRYlA3dlNiazVCN1hkMzNsY2I1Y0ZXOEVvcmxqUWlBNjBzRDJvbXBOcGE5ekd5cURCZzBmamM), "downward trend intensifies" [pv magazine USA](https://news.google.com/rss/articles/CBMipgFBVV95cUxOcjExeDRCaXlHV3F4dnlwOVNIVTJUSXFvMTRnVUlqcjNMMGJYbDh1YUx3Ym9EQUZKWkVsdFZydXEzLXBRb0kxdVFkTlRQTHZtOF9kM2FNU2VIYnJ2RUFWWE9fcm16V0o0MThFM2laYmYtRXM0RjY5czFRZWZWcFdRaE1sMG43UnBSMkFXell5V0FpamttUTVXSHlRVGRnZDNlUXlMSlNn)
 
-INTERPRETATION: Extreme RSI reading suggests mechanical mean-reversion bounce potential, but absence of flow data and continued bearish news narratives indicate oversold conditions may not anchor recovery.
+INTERPRETATION: Extreme RSI compression and month-long price collapse suggest mean-reversion pressure, though absence of volume/open-interest data prevents confirmation of capitulation exhaustion.
 
-### #2 GOLD-SILVER RATIO EXPANSION (Secondary)
-- Ratio at 69.2 vs. historical average ~65 (424 basis point premium for gold relative to silver)
-- News articles reference "Fed keeps price prediction bearish" and "downward trend intensifies" confirming sustained relative gold strength
+### #2 MACRO HEADWINDS FROM YIELD REGIME (Secondary)
+- US 10Y at 437 bps (marginal -2 bps today); DXY at 101.27 (-10 bps weakening slightly)
+- Fed rate expectations remain restrictive [FXEmpire](https://news.google.com/rss/articles/CBMiwwFBVV95cUxNanRjUk9KcjM5ZWthUXV5NW9pa1JiZVRQeEVMcU5OTmg3YU4tVUY0Nk9oZ01UaWpnWG54MUh1ZTctR1lVNWVNTGlwcjhzSUtVTi12TzFzNUZKeERyMWdsdnhMbkFYXzVnNDcweE9vN1phQ1dpYm1ROHBXb3RINHYxdEZ6WlN3NmVZZTdmQjJ1aG1BbkdJc3ZpYWRzRHFOcEgtZ2FvbDFPeW5LYnhDeFgtZFp6bkZLQXhQajZKRUNTUXd2V3M); no concrete yield relief signal in news
 
-INTERPRETATION: Elevated ratio at 69.2 suggests silver undervalued on relative basis, but sustained ratio expansion through bearish news flow indicates ratio mean reversion may not reverse without macro catalyst.
+INTERPRETATION: Elevated real yields continue to penalize non-yielding silver despite small daily DXY weakness, capping multi-week recovery potential absent a 50+ bps yield shock.
 
-### #3 MACRO TAILWINDS DAMPENING (Tertiary)
-- DXY -10 basis points (mildly bullish for silver) and US10Y -2 bps (mildly bullish for silver) provide marginal support
-- Articles reference "Fed hike odds cool after oil slide" and "Iran talks" as potential tailwinds, but absent from today's news roster
+### #3 INDUSTRIAL DEMAND EROSION IN SOLAR (Tertiary)
+- No quantitative industrial demand data available
+- Solar cell market "remains bearish" with "rising inventories" weighing on supply chain [Green Building Africa](https://news.google.com/rss/articles/CBMizwFBVV95cUxPNEZTWVdFdXlLT2FfSVBYbEhSdGpQME9PcWpGb3hfc3RlOEpCQzIzeEIyR0l5bkd1RVlna1ZoemEwUGJPY1VUWHdlbXpLVnBRTFhsXy10SWs2bWNJLUNnRE5mUnBIQUl2UFZBM1JTQm5fVUJkVnkwXzJjdlI4MUxWT3hKbnV1aVlaelhXaTByS25DczkzNmVhQkxGd3ZuV3VESnA3TGJEY1Vyb0JaaXRYczIzT1pVUVJWa1R0UE5jNWJpSV9aZnd5dXB0X256T2s); silver price pressure from solar oversupply confirmed [pv magazine USA](https://news.google.com/rss/articles/CBMipgFBVV95cUxOcjExeDRCaXlHV3F4dnlwOVNIVTJUSXFvMTRnVUlqcjNMMGJYbDh1YUx3Ym9EQUZKWkVsdFZydXEzLXBRb0kxdVFkTlRQTHZtOF9kM2FNU2VIYnJ2RUFWWE9fcm16V0o0MThFM2laYmYtRXM0RjY5czFRZWZWcFdRaE1sMG43UnBSMkFXell5V0FpamttUTVXSHlRVGRnZDNlUXlMSlNn)
 
-INTERPRETATION: Modest currency and yield declines offer minor bullish bias, but insufficient magnitude and missing directional news confirmation limit macro driver conviction.
+INTERPRETATION: [News-only] Solar sector inventory buildup signals structural demand weakness in a key industrial end-use, though magnitude of demand destruction relative to total consumption remains unmeasured.
 
 ---
 
@@ -56,84 +67,83 @@ INTERPRETATION: Modest currency and yield declines offer minor bullish bias, but
 ### BULLISH CASE
 
 1. EVIDENCE:
-   - RSI-14 at 27.2 (extreme oversold <30)
-   - Gold-silver ratio at 69.2 vs. historical avg 65 (relative undervaluation)
-   
-   INTERPRETATION: Oversold RSI and elevated ratio both mechanically signal mean-reversion bounce potential with 10–15% upside to $64–68 price targets.
+   - RSI-14 at 27.2 (deeply oversold, <30 threshold)
+   - 23.7% drawdown from 30d high; classical mean-reversion setup
+   - No corroborating news of capitulation or panic selling volume
+
+INTERPRETATION: Extreme technical compression historically precedes 5–10% relief bounces, and gold's -0.14% steadiness relative to silver's -0.26% suggests selective repricing of silver risk premium.
 
 2. EVIDENCE:
-   - DXY down 10 bps (weakening dollar bullish for silver)
-   - US 10Y down 2 bps (falling yields reduce opportunity cost of holding non-yielding silver)
-   
-   INTERPRETATION: Modest macro easing in currency and rates provides directional tailwind, though magnitude insufficient to drive conviction above Medium.
+   - DXY weakening -10 bps to 101.27
+   - US 10Y yielding -2 bps to 437 bps (small relief)
+   - Iran crisis and NFP uncertainty ahead may spark geopolitical-driven safe-haven demand
+
+INTERPRETATION: [News-only] Pending macro events (NFP, Iran talks) create binary upside catalysts that could trigger 2–4% snap relief if risk-off sentiment emerges.
 
 ### BEARISH CASE
 
 1. EVIDENCE:
-   - Silver -23.7% from 30-day high ($76.90 → $58.90)
-   - Multiple articles cite "downward trend intensifies" and "silver price falls," signaling sustained momentum selling
-   
-   INTERPRETATION: Extended drawdown and consistent bearish narrative flow suggest structural demand weakness despite technical oversold signals.
+   - Gold/Silver Ratio at 69.2 (4.2 pts above 65 avg), highest in analysis period
+   - US 10Y at 437 bps remains structurally elevated vs pre-2022 regime
+   - Silver underperformance vs gold suggests loss of industrial confidence
+
+INTERPRETATION: The 69.2 ratio signals silver is priced as a "desperate play," with macro yields continuing to compress real returns and industrial demand erosion (solar inventory glut) favoring gold's safe-haven status.
 
 2. EVIDENCE:
-   - Solar cell market bearish with rising silver inventories cited in industrial supply chain
-   - Fed bearish forecasts and ETF selling pressure noted in KITCO article
-   
-   INTERPRETATION: Industrial demand weakness and institutional ETF liquidation indicate downtrend may persist through oversold bounce, with $50 support identified as next floor.
+   - Silver at $57–59 range for past week; no intraday momentum above $59.50
+   - ETF selling pressure documented [KITCO](https://news.google.com/rss/articles/CBMitwFBVV95cUxOSnBsdUFSXzlka3FYNG85bTNoa01RbmFWLTdnMkF5QU5UU0JXV2gwc25obHRVZzNlWDc2QWxlTFlVNVBBNWJwVkZfWEpoRE1LRlVJNW56WFVLbF9OY1B2eEtHV05tbXotc3dyZWpRVzhkM3pTb3UyN1VheEkyQ3lCRjVRYlA3dlNiazVCN1hkMzNsY2I1Y0ZXOEVvcmxqUWlBNjBzRDJvbXBOcGE5ekd5cURCZzBmamM); no offsetting institutional demand signal
+   - Fed rate trajectory remains "bearish" per FXEmpire forecast despite technicals
+
+INTERPRETATION: Absence of rally-sustaining volume and continued ETF outflows suggest oversold conditions may represent a lower-range retest rather than capitulation washout, with $50 support test possible if macro headlines deteriorate further.
 
 ---
 
 ## SUPPLY RISK MONITOR
 
 EVIDENCE:
-- [Green Building Africa](https://news.google.com/rss/articles/CBMizwFBVV95cUxPNEZTWVdFdXlLT2FfSVBYbEhSdGpQME9PcWpGb3hfc3RlOEpCQzIzeEIyR0l5bkd1RVlna1ZoemEwUGJPY1VUWHdlbXpLVnBRTFhsXy10SWs2bWNJLUNnRE5mUnBIQUl2UFZBM1JTQm5fVUJkVnkwXzJjdlI4MUxWT3hKbnV1aVlaelhXaTByS25DczkzNmVhQkxGd3ZuV3VESnA3TGJEY1Vyb0JaaXRYczIzT1pVUVJWa1R0UE5jNWJpSV9aZnd5dXB0X256T2s) Solar cell market bearish; rising silver inventories weigh on supply chain demand
-- [pv magazine USA](https://news.google.com/rss/articles/CBMipgFBVV95cUxOcjExeDRCaXlHV3F4dnlwOVNIVTJUSXFvMTRnVUlqcjNMMGJYbDh1YUx3Ym9EQUZKWkVsdFZydXEzLXBRb0kxdVFkTlRQTHZtOF9kM2FNU2VIYnJ2RUFWWE9fcm16V0o0MThFM2laYmYtRXM0RjY5czFRZWZWcFdRaE1sMG43UnBSMkFXell5V0FpamttUTVXSHlRVGRnZDNlUXlMSlNn) Silver price decline to $57 associated with solar supply chain stress
-- Regional price declines noted [Ratopati Nepal, Laodong Vietnam, Mint India](https://news.google.com/rss/articles/CBMiswFBVV95cUxQZFhRa09pVVB4TnI3NDBoUzU5dTU1czdka2hKX2QzWG90U1FXMzhvOTdkQ3ByNkFobkYtc1RsaHhGS05nUG9UVVZLMUJtLWdhVFdhRGF2OGcybXdSeXMxZXhQbFltaVVEMDFucm9jUFVmUEgzN1pncmtJeVFMMnd5Y3QxRHFNdlFZMUhUWHI3ZjhkZWJXX2VxLUVyS0hneWlrSW1Jdm9uTno3a0Y5TVdVTEZYQQ) consistent with broad sell-off; no supply disruption reported
+- Green Building Africa: Solar cell market bearish with rising silver inventories weighing on supply chain — suggests secondary supply pressure (industrial inventory buildup) rather than primary supply disruption.
+- No geopolitical or mining disruption signals in today's articles.
+- No COMEX inventory data available to assess physical tightness or contango/backwardation regime.
 
-INTERPRETATION: [News-only] Rising inventories and weak solar demand suggest oversupply conditions rather than supply risk; no production disruptions, refinery outages, or geopolitical supply constraints identified.
+INTERPRETATION: [News-only] Supply risk appears MEDIUM due to industrial sector inventory overhang dampening demand visibility, though no primary supply shock or acute shortage is signaled; elevated inventories may prolong price weakness.
 
-Risk: **LOW**
-
-CONFIDENCE: Medium — inventory accumulation and weak demand are consistent with supply glut rather than shortage, but absence of COMEX inventory data prevents quantitative confirmation of absolute stock levels.
+Risk: MEDIUM
+CONFIDENCE: Medium — News-only evidence (no COMEX inventory or mining disruption data) limits certainty; solar sector glut is real but magnitude relative to total silver supply unmeasured.
 
 ---
 
 ## CONVICTION SCORE
 
 **Macro: 6/10**
-- DXY: 101.27, -10 bps (weakening, mildly bullish for silver)
-- US10Y: 4.37%, -2 bps (falling, mildly bullish for silver)
-- Net impact: Neutral-to-Bullish — modest easing in dollar and rates provides directional support but insufficient magnitude to anchor conviction; missing real yields data prevents full macro assessment.
+- DXY at 101.27 (-10 bps, marginal weakening) — mildly bullish but insufficient to offset yield pressure
+- US 10Y at 437 bps (-2 bps, still structurally elevated) — continues to penalize silver vs gold
+- Net impact: Neutral-to-Bearish — Yield regime remains a structural headwind despite small daily relief; no Fed pivot signal evident.
 
-**Technicals: 4/10**
-- RSI-14: 27.2 (oversold <30, mechanical rebound signal)
-- 30-day drawdown: -23.7% from $76.90 high; support levels at $57 and $50 both challenged
-- Net impact: Bearish — oversold RSI suggests bounce potential, but extended drawdown and missing volume/open interest data indicate technical signals may be noise in sustained downtrend.
+**Technicals: 3/10**
+- RSI-14 at 27.2 (deeply oversold, <30 threshold) — textbook mean-reversion setup
+- 23.7% drawdown from 30d high; no corroborating volume data to confirm exhaustion
+- Net impact: Bearish — Oversold conditions exist but lack volume/open-interest confirmation; without capitulation washout signal, mean reversion may stall at mid-range rather than drive sustained recovery.
 
 **Sentiment: 5/10**
-- Risk-off sentiment inferred from gold outperformance (ratio +424 bps) and broad precious metals weakness
-- News narratives cite "downward trend intensifies," "prices decline," and "bearish" forecasts, offsetting oversold technical signal
-- Net impact: Neutral — mixed signals; technical extremes conflict with bearish sentiment flow.
+- Risk-on/off mixed: DXY weakening slightly (-10 bps) but yield structure unchanged
+- News sentiment mixed: technical bounce articles vs. "Fed keeps price prediction bearish" [FXEmpire](https://news.google.com/rss/articles/CBMiwwFBVV95cUxNanRjUk9KcjM5ZWthUXV5NW9pa1JiZVRQeEVMcU5OTmg3YU4tVUY0Nk9oZ01UaWpnWG54MUh1ZTctR1lVNWVNTGlwcjhzSUtVTi12TzFzNUZKeERyMWdsdnhMbkFYXzVnNDcweE9vN1phQ1dpYm1ROHBXb3RINHYxdEZ6WlN3NmVZZTdmQjJ1aG1BbkdJc3ZpYWRzRHFOcEgtZ2FvbDFPeW5LYnhDeFgtZFp6bkZLQXhQajZKRUNTUXd2V3M); geopolitical catalysts ahead (Iran, NFP) create binary upside but no current tail-risk premium
+- Net impact: Neutral — Sentiment lacks a dominant directional bias; pending macro events introduce event risk but no current momentum.
 
-**ETF Flows: 3/10**
-- No direct SLV flow data available; KITCO article cites "ETF selling" as pressure factor but lacks magnitude
-- Net impact: Bearish — reported ETF selling (direction confirmed, size unknown) combined with missing actual flow data limits conviction to Low.
+**ETF Flows: 4/10** [News-only]
+- No direct SLV flow data; KITCO references "ETF selling" without magnitude — directional confirmation of outflows but scale unknown
+- Net impact: Bearish — Evidence of institutional redemptions pressures spot, but absence of flow-spike data (panic selling vs. rebalancing) limits conviction; capped at Medium confidence per instructions.
 
-**Industrial Demand: 4/10**
-- Solar cell market bearish [Green Building Africa](https://news.google.com/rss/articles/CBMizwFBVV95cUxPNEZTWVdFdXlLT2FfSVBYbEhSdGpQME9PcWpGb3hfc3RlOEpCQzIzeEIyR0l5bkd1RVlna1ZoemEwUGJPY1VUWHdlbXpLVnBRTFhsXy10SWs2bWNJLUNnRE5mUnBIQUl2UFZBM1JTQm5fVUJkVnkwXzJjdlI4MUxWT3hKbnV1aVlaelhXaTByS25DczkzNmVhQkxGd3ZuV3VESnA3TGJEY1Vyb0JaaXRYczIzT1pVUVJWa1R0UE5jNWJpSV9aZnd5dXB0X256T2s); rising silver inventories cited as headwind
-- No EV, electronics, or other industrial end-use data; photovoltaic demand weakness primary signal
-- Net impact: Bearish — solar supply chain stress and inventory accumulation indicate demand weakness, but narrow sector coverage limits full industrial assessment.
+**Industrial Demand: 5/10** [News-only]
+- Solar sector inventory buildup and "cell market remains bearish" [Green Building Africa](https://news.google.com/rss/articles/CBMizwFBVV95cUxPNEZTWVdFdXlLT2FfSVBYbEhSdGpQME9PcWpGb3hfc3RlOEpCQzIzeEIyR0l5bkd1RVlna1ZoemEwUGJPY1VUWHdlbXpLVnBRTFhsXy10SWs2bWNJLUNnRE5mUnBIQUl2UFZBM1JTQm5fVUJkVnkwXzJjdlI4MUxWT3hKbnV1aVlaelhXaTByS25DczkzNmVhQkxGd3ZuV3VESnA3TGJEY1Vyb0JaaXRYczIzT1pVUVJWa1R0UE5jNWJpSV9aZnd5dXB0X256T2s) signals demand headwinds
+- No quantitative data on total industrial offtake, EV battery demand, or photovoltaic production trends
+- Net impact: Neutral — Solar weakness is real and documented, but represents only ~7–8% of total silver demand; magnitude of demand destruction unclear; capped at Medium confidence.
 
 **Overall: 4/10**
-- Weighted average of macro (6) + technicals (4) + sentiment (5) + ETF flows (3) + industrial demand (4) = 4.4 → rounds to 4
-- Conviction leans bearish: extended drawdown, weak industrial demand, ETF selling, and bearish sentiment outweigh technical oversold signals and modest macro tailwinds.
 
 ---
 
 ## VERDICT
 
-Silver RSI at 27.2 signals deep oversold conditions after a 23.7% decline from 30-day highs, driven by sustained ETF selling and solar supply chain weakness. However, muted macro support (DXY -10 bps, US10Y -2 bps) and rising inventories suggest downtrend momentum may persist through technical bounce, capping near-term upside conviction.
+Silver RSI at 27.2 signals deep oversold conditions after a 23.7% drawdown from 30-day highs. Macro headwinds from elevated yields (437 bps) and expanded gold-silver ratio (69.2) limit conviction in sustained recovery despite classical mean-reversion setup.
 
 ---
-
-{"conviction":{"macro":6,"technicals":4,"sentiment":5,"etf_flows":3,"industrial_demand":4,"overall":4,"verdict":"Silver RSI at 27.2 signals deep oversold conditions after a 23.7% decline from 30-day highs, driven by sustained ETF selling and solar supply chain weakness. However, muted macro support (DXY -10 bps, US10Y -2 bps) and rising inventories suggest downtrend momentum may persist through technical bounce, capping near-term upside conviction.","supply_risk":"LOW"}}
