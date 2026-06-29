@@ -130,18 +130,50 @@ CONFIDENCE: High/Medium/Low — [one sentence reason]
 
 ## CONVICTION SCORE
 
-Score each component 1–10 (1 = very bearish, 10 = very bullish). One sentence per component citing the key data point. Cap ETF Flows and Industrial Demand confidence at Medium where no direct data exists.
+Score each component 1–10 (1 = very bearish, 10 = very bullish). Use the exact format below. Each component requires 2–3 bullet points with specific numbers and a "Net impact" line. The net impact line must be consistent with the score: ≤4 = bearish, 5–6 = neutral/mixed, ≥7 = bullish. Cap ETF Flows and Industrial Demand confidence at Medium where no direct data exists.
 
-Macro: X/10 — [one sentence citing DXY and US10Y moves]
-Technicals: X/10 — [one sentence citing silver % move and ratio]
-Sentiment: X/10 — [one sentence citing risk-on/off signal]
-ETF Flows: X/10 — [one sentence, note [News-only] if no direct data]
-Industrial Demand: X/10 — [one sentence, note [News-only] if no direct data]
-Overall: X/10
+**Macro: X/10**
+- DXY: [value and change in pts/bps] ([↑/↓] [bullish/bearish] for silver)
+- US10Y: [value and change in bps] ([↑/↓] [bullish/bearish] for silver)
+- Net impact: [Bullish/Neutral/Bearish] — [one clause explaining magnitude or regime]
+
+**Technicals: X/10**
+- RSI-14: [value] ([condition: oversold <30 / neutral / overbought >70])
+- [30d drawdown or key price level with specific number]
+- Net impact: [Bullish/Neutral/Bearish] — [one clause]
+
+**Sentiment: X/10**
+- [risk-on/off signal with specific data point]
+- [news-based sentiment signal or "No corroborating news"]
+- Net impact: [Bullish/Neutral/Bearish] — [one clause]
+
+**ETF Flows: X/10** [News-only if no direct data]
+- [SLV volume or flow proxy, or "No direct flow data"]
+- Net impact: [Bullish/Neutral/Bearish] — [one clause]
+
+**Industrial Demand: X/10** [News-only if no direct data]
+- [solar/EV/industrial signal or "No direct demand data"]
+- Net impact: [Bullish/Neutral/Bearish] — [one clause]
+
+**Overall: X/10**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-At the very end of your output, after all prose, output a single line containing only a JSON object in this exact format (no extra text, no code block fences, just the raw JSON on its own line):
-{{"conviction":{{"macro":7,"technicals":5,"sentiment":6,"etf_flows":4,"industrial_demand":8,"overall":6,"verdict":"Brief one-sentence verdict here","supply_risk":"MEDIUM"}}}}
+## VERDICT
 
-Replace each integer with the actual score (1–10) from your analysis above, set overall to the weighted average rounded to the nearest integer, set verdict to a single sentence summarising your overall conviction, and set supply_risk to the level from the SUPPLY RISK MONITOR section (LOW, MEDIUM, or HIGH).
+Write this LAST, after all sections above are complete and conviction scores are finalised. The verdict is the "verdict" field in the JSON block. Rules:
+
+- Maximum 2 sentences, maximum 40 words total.
+- First sentence: a fact with one specific number (price, RSI, ratio, or percentage) naming the #1 ranked market driver.
+- Second sentence: a directional interpretation consistent with the overall conviction score — bearish tone if overall ≤4, bullish if overall ≥7, balanced if 5–6.
+- Must not be vague or contradictory. Do not hedge both directions in the same verdict.
+
+Good example (overall 4, bearish): "Silver RSI at 27.1 signals deep oversold conditions after a 23.7% drawdown from 30-day highs. Technical mean reversion appears likely but macro headwinds from elevated yields cap upside conviction."
+Bad example: "Silver faces near-term headwinds but elevated gold-silver ratio and industrial demand suggest limited downside." (vague, no single driver, hedges both directions)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+At the very end of your output, after all prose including the VERDICT above, output a single line containing only a JSON object in this exact format (no extra text, no code block fences, just the raw JSON on its own line):
+{{"conviction":{{"macro":7,"technicals":5,"sentiment":6,"etf_flows":4,"industrial_demand":8,"overall":6,"verdict":"Fact sentence with specific number. Interpretation sentence with direction.","supply_risk":"MEDIUM"}}}}
+
+Replace each integer with the actual score (1–10) from your analysis above, set overall to the weighted average rounded to the nearest integer, set verdict to the 2-sentence max-40-word verdict written in the VERDICT section above, and set supply_risk to the level from the SUPPLY RISK MONITOR section (LOW, MEDIUM, or HIGH).
