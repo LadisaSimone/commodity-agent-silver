@@ -1597,11 +1597,11 @@ with snap_col:
 verdict = scores.get("verdict", "Analysis generated from market signals and news flow.")
 
 st.markdown(f"""
-<div style="background:#0d1117;border:1px solid #1a5e3a;border-radius:12px;padding:12px 24px;margin:8px 0 6px;">
-    <div style="font-size:0.65rem;color:#5a6a7e;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">
-        AI Morning Brief — {briefing_date}
+<div style="border:1px solid #2a9d8f;border-radius:8px;padding:0.6rem 1rem;background:#0d1f1e;">
+    <div style="font-size:0.65rem;color:#2a9d8f;letter-spacing:0.1em;margin-bottom:0.3rem;">
+        AI MORNING BRIEF — {briefing_date}
     </div>
-    <div style="font-size:0.85rem;color:#e8eaf0;line-height:1.6;font-style:italic;">
+    <div style="font-size:0.9rem;color:#e9c46a;font-style:italic;line-height:1.4;">
         {verdict}
     </div>
 </div>
@@ -1632,11 +1632,11 @@ with method_col:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div style="height:340px;background:#0d1117;border:1px solid #1a5e3a;border-radius:8px;'
-        'padding:16px 20px;margin-bottom:12px;">'
-        '<p style="color:#00d4aa;font-weight:600;margin-bottom:12px;font-size:0.85rem;">'
+        '<div style="height:auto;background:#0d1117;border:1px solid #1a5e3a;border-radius:8px;'
+        'padding:8px 12px;margin-bottom:12px;">'
+        '<p style="color:#00d4aa;font-weight:600;margin-bottom:8px;font-size:0.9rem;">'
         'How this analysis is generated</p>'
-        '<div style="font-size:0.78rem;color:#8ab58a;line-height:1.9;">'
+        '<div style="font-size:0.8rem;color:#8ab58a;line-height:1.8;">'
         '① Live prices fetched from Yahoo Finance (Silver, Gold, DXY, US10Y)<br>'
         '② Signals computed: RSI-14, 30d volatility, significant move detection<br>'
         '③ 20 news articles ingested from Google News, Reuters, Kitco<br>'
