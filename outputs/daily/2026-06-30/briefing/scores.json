@@ -1,10 +1,10 @@
 {
   "macro": 3,
-  "technicals": 5,
-  "sentiment": 4,
+  "technicals": 7,
+  "sentiment": 3,
   "etf_flows": 5,
-  "industrial_demand": 5,
+  "industrial_demand": 4,
   "overall": 4,
-  "verdict": "Silver RSI at 29.5 signals mechanical oversold bounce, but DXY strength (+5 bps) and 4.37% US10Y yields create persistent macro headwinds that cap upside. Near-term recovery possible; structural bearish regime from rate-hike expectations limits conviction above resistance.",
+  "verdict": "Silver's RSI at 29.5 after a -23.3% drawdown from the 30-day high signals mechanical oversold conditions, but the 4.37% US 10Y yield and restrictive Fed policy framework \u2014 the dominant macro scoring factor \u2014 continue to suppress opportunity-cost-sensitive demand. Watch for a break above $62.00 or a sustained decline in the US 10Y yield below 4.20% to indicate whether the Fed tightening narrative is beginning to soften.",
   "supply_risk": "MEDIUM"
 }

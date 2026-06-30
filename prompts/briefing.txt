@@ -89,6 +89,7 @@ EVIDENCE:
 INTERPRETATION: [one sentence on what the silver % move and macro backdrop imply, citing specific numbers.]
 
 CONFIDENCE: High/Medium/Low — [one sentence]
+Apply the same High/Medium/Low confidence methodology used in the scoring pass: High requires 2+ independent signal types, Medium requires 1 quantitative + news or 2+ news sources, Low is single-source or conflicting.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -179,6 +180,7 @@ INTERPRETATION: [one sentence on whether supply risk is elevated, neutral, or ab
 
 Risk: [LOW / MEDIUM / HIGH]
 CONFIDENCE: High/Medium/Low — [one sentence reason]
+Apply the same High/Medium/Low confidence methodology used in the scoring pass: High requires 2+ independent signal types, Medium requires 1 quantitative + news or 2+ news sources, Low is single-source or conflicting.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -217,14 +219,15 @@ Use the exact scores given in FIXED SCORING above for every category and Overall
 
 Write this LAST, after all sections above are complete. Must be consistent with weighted_explanation in FIXED SCORING above. Rules:
 
-- Maximum 2 sentences, maximum 40 words total.
-- First sentence: a fact with one specific number (price, RSI, ratio, or percentage) naming the #1 ranked market driver.
-- Second sentence: a directional interpretation consistent with the overall conviction score — bearish tone if overall ≤4, bullish if overall ≥7, balanced if 5–6.
+- Maximum 3 sentences, maximum 60 words total.
+- First sentence: a fact with one specific number (price, RSI, ratio, or percentage) naming the #1 ranked market driver — answers "what happened."
+- Second sentence: a directional interpretation consistent with the overall conviction score — answers "why it happened," referencing the dominant scoring category from FIXED SCORING above.
+- Third sentence: one specific, concrete thing to monitor next (a price level, data release, or event) that would change the conviction — answers "what to watch." Must be specific, not generic (e.g. "watch for COMEX inventory data release" not "monitor market conditions").
 - Must not be vague or contradictory. Do not hedge both directions in the same verdict.
 
-Good example (overall 4, bearish): "Silver RSI at 27.1 signals deep oversold conditions after a 23.7% drawdown from 30-day highs. Technical mean reversion appears likely but macro headwinds from elevated yields cap upside conviction."
-Bad example: "Silver faces near-term headwinds but elevated gold-silver ratio and industrial demand suggest limited downside." (vague, no single driver, hedges both directions)
+Good example (overall 4, bearish): "Silver RSI at 27.1 signals deep oversold conditions after a 23.7% drawdown from 30-day highs. Macro headwinds from elevated 4.38% US10Y yields, the dominant scoring factor, cap upside conviction despite the technical bounce. Watch US10Y yields and the next Fed commentary for signs of the rate-hike narrative softening."
+Bad example: "Silver faces near-term headwinds but elevated gold-silver ratio and industrial demand suggest limited downside." (vague, no single driver, hedges both directions, no monitoring point)
 
 The VERDICT section above is the final section of your output. Do not output anything after it — no JSON, no summary, no closing remarks.
 
-Replace each integer with the actual score (1–10) from your analysis above, set overall to the weighted average rounded to the nearest integer, set verdict to the 2-sentence max-40-word verdict written in the VERDICT section above, and set supply_risk to the level from the SUPPLY RISK MONITOR section (LOW, MEDIUM, or HIGH).
+Replace each integer with the actual score (1–10) from your analysis above, set overall using the fixed weighting formula from FIXED SCORING above rounded to the nearest integer, set verdict to the 3-sentence max-60-word verdict written in the VERDICT section above, and set supply_risk to the level from the SUPPLY RISK MONITOR section (LOW, MEDIUM, or HIGH).
