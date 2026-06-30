@@ -75,11 +75,21 @@ def load_latest_briefing() -> tuple[str | None, str | None, dict]:
     return None, None, {}
 
 
-def load_latest_prices() -> tuple[dict, dict, dict, dict] | None:
-    today = date.today().isoformat()
+def load_latest_prices(briefing_date: str | None = None) -> tuple[dict, dict, dict, dict] | None:
     _out = Path(OUTPUTS_DIR)
 
-    # Try flat file first
+    # Fall back to daily structured path for the resolved briefing date first —
+    # this is the date the rest of the page is actually showing.
+    if briefing_date:
+        daily_prices = _out / "daily" / briefing_date / "raw" / "prices.json"
+        if daily_prices.exists():
+            try:
+                data = json.loads(daily_prices.read_text())
+                return data["silver"], data["gold"], data["dxy"], data["us10y"]
+            except Exception:
+                pass
+
+    # Try flat file next (legacy compat — may be stale relative to briefing_date)
     flat_files = sorted(_out.glob("prices_*.json"))
     if flat_files:
         try:
@@ -88,8 +98,8 @@ def load_latest_prices() -> tuple[dict, dict, dict, dict] | None:
         except Exception:
             pass
 
-    # Fall back to daily structured path
-    daily_prices = _out / "daily" / today / "raw" / "prices.json"
+    # Last resort: today's daily structured path
+    daily_prices = _out / "daily" / date.today().isoformat() / "raw" / "prices.json"
     if daily_prices.exists():
         try:
             data = json.loads(daily_prices.read_text())
@@ -100,11 +110,20 @@ def load_latest_prices() -> tuple[dict, dict, dict, dict] | None:
     return None
 
 
-def load_latest_history() -> list[dict]:
-    today = date.today().isoformat()
+def load_latest_history(briefing_date: str | None = None) -> list[dict]:
     _out = Path(OUTPUTS_DIR)
 
-    # Try flat file first
+    # Daily structured path for the resolved briefing date first — this is the
+    # date the rest of the page is actually showing.
+    if briefing_date:
+        daily_history = _out / "daily" / briefing_date / "raw" / "history.json"
+        if daily_history.exists():
+            try:
+                return json.loads(daily_history.read_text())
+            except Exception:
+                pass
+
+    # Try flat file next (legacy compat — may be stale relative to briefing_date)
     flat_files = sorted(_out.glob("history_*.json"))
     if flat_files:
         try:
@@ -112,8 +131,8 @@ def load_latest_history() -> list[dict]:
         except Exception:
             pass
 
-    # Fall back to daily structured path
-    daily_history = _out / "daily" / today / "raw" / "history.json"
+    # Last resort: today's daily structured path
+    daily_history = _out / "daily" / date.today().isoformat() / "raw" / "history.json"
     if daily_history.exists():
         try:
             return json.loads(daily_history.read_text())
@@ -1411,12 +1430,12 @@ with st.sidebar:
 # ── load / generate briefing ──────────────────────────────────────────────────
 
 briefing, briefing_date, scores = load_latest_briefing()
-_prices = load_latest_prices()
+_prices = load_latest_prices(briefing_date)
 if _prices is not None:
     silver, gold, dxy, us10y = _prices
 else:
     silver = gold = dxy = us10y = None
-history = load_latest_history()
+history = load_latest_history(briefing_date)
 
 last_updated_slot.markdown(
     f'<div style="font-size:0.7rem;color:#4a5a72;">Last updated<br>'
