@@ -482,7 +482,7 @@ def generate_pdf(
         return result
 
     def parse_drivers(briefing: str) -> list[str]:
-        matches = re.findall(r'#\d+\s+([A-Z][A-Z\s/\-&,]+?)(?:\s*\(|\s*—|\s*\n)', briefing)
+        matches = re.findall(r'#\d+\s+(.+?)\s*\((?:Primary|Secondary|Tertiary)\)', briefing)
         drivers = []
         for m in matches:
             name = m.strip()

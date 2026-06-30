@@ -1,10 +1,10 @@
 {
   "macro": 3,
-  "technicals": 7,
+  "technicals": 5,
   "sentiment": 4,
-  "etf_flows": 3,
-  "industrial_demand": 4,
+  "etf_flows": 5,
+  "industrial_demand": 5,
   "overall": 4,
-  "verdict": "Silver RSI at 29.5 signals deep oversold conditions after a -23.3% drawdown from 30-day highs. Rising yields and a stronger dollar outweigh technical mean-reversion signals, capping near-term upside conviction.",
-  "supply_risk": "LOW"
+  "verdict": "Silver RSI at 29.5 signals mechanical oversold bounce, but DXY strength (+5 bps) and 4.37% US10Y yields create persistent macro headwinds that cap upside. Near-term recovery possible; structural bearish regime from rate-hike expectations limits conviction above resistance.",
+  "supply_risk": "MEDIUM"
 }

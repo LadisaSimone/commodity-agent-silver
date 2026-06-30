@@ -5,10 +5,14 @@ import time
 from datetime import date
 from pathlib import Path
 
-from config.settings import MODEL, MAX_TOKENS
+from config.settings import MODEL, SCORING_MAX_TOKENS, NARRATIVE_MAX_TOKENS
 
 _PROMPT_TEMPLATE = (
     Path(__file__).parent.parent.parent / "prompts" / "briefing.txt"
+).read_text()
+
+_SCORING_PROMPT_TEMPLATE = (
+    Path(__file__).parent.parent.parent / "prompts" / "scoring.txt"
 ).read_text()
 
 _DEFAULT_SCORES = {
@@ -188,6 +192,59 @@ def _build_fallback_signals(silver: dict, gold: dict, dxy: dict | None, us10y: d
     return "\n".join(lines)
 
 
+def _format_scoring_result(scores: dict) -> str:
+    """Format Stage 1 JSON into readable text injected into the Stage 2 prompt."""
+    s = scores["scores"]
+    lines = [
+        f"Macro: {s['macro']}/10",
+        f"Technicals: {s['technicals']}/10",
+        f"Sentiment: {s['sentiment']}/10",
+        f"ETF Flows: {s['etf_flows']}/10",
+        f"Industrial Demand: {s['industrial_demand']}/10",
+        f"Overall: {scores['overall']}/10 — {scores['overall_label']}",
+        "",
+        "Ranked Drivers (reproduce this exact order, names, impact, and confidence):",
+    ]
+    for d in scores["ranked_drivers"]:
+        lines.append(
+            f"  #{d['rank']} {d['name']} — Impact: {d['impact']} | "
+            f"Confidence: {d['confidence']} | {d['reasoning']}"
+        )
+    lines.append("")
+    lines.append(f"Dominant scoring category: {scores['dominant_category']}")
+    lines.append(f"Why ranking and scores combine the way they do: {scores['weighted_explanation']}")
+    return "\n".join(lines)
+
+
+def _extract_verdict(briefing_text: str) -> str:
+    match = re.search(
+        r'##\s*VERDICT\s*\n+(.*?)(?:\n---|\Z)',
+        briefing_text, re.DOTALL | re.IGNORECASE
+    )
+    return match.group(1).strip() if match else "No verdict extracted."
+
+
+def _call_claude(client, prompt: str, max_tokens: int) -> str:
+    """Shared retry wrapper for both stages."""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model=MODEL,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=120.0,
+            )
+            return response.content[0].text
+        except Exception as e:
+            if attempt < max_retries - 1:
+                wait = 2 ** attempt
+                print(f"API error (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+
+
 def extract_scores(briefing_text: str) -> tuple[str, dict]:
     # Pre-processing: collapse ```json\n{...}\n``` into a bare JSON line
     clean = re.sub(r'^```json\s*\n', '', briefing_text.strip())
@@ -264,31 +321,41 @@ def summarize(
         for a in articles
     ))
 
-    prompt = _PROMPT_TEMPLATE.format(
+    # STAGE 1 — scoring + ranking only, JSON output
+    scoring_prompt = _SCORING_PROMPT_TEMPLATE.format(
         today=today,
         quantitative_signals=quantitative_signals,
         data_quality=data_quality_block,
         articles_text=articles_text,
     )
+    scoring_raw = _call_claude(client, scoring_prompt, max_tokens=SCORING_MAX_TOKENS).strip()
+    scoring_raw = re.sub(r'^```json\s*\n?', '', scoring_raw)
+    scoring_raw = re.sub(r'\n?```\s*$', '', scoring_raw)
+    scores = json.loads(scoring_raw)
 
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response = client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=120.0,
-            )
-            break
-        except Exception as e:
-            if attempt < max_retries - 1:
-                wait = 2 ** attempt
-                print(f"API error (attempt {attempt+1}/{max_retries}): {e}. Retrying in {wait}s...")
-                time.sleep(wait)
-            else:
-                raise
+    # STAGE 2 — narrative, fed the fixed Stage 1 result
+    scoring_result_text = _format_scoring_result(scores)
+    prompt = _PROMPT_TEMPLATE.format(
+        today=today,
+        quantitative_signals=quantitative_signals,
+        data_quality=data_quality_block,
+        articles_text=articles_text,
+        scoring_result=scoring_result_text,
+    )
+    narrative_raw = _call_claude(client, prompt, max_tokens=NARRATIVE_MAX_TOKENS)
 
-    clean_briefing, scores = extract_scores(response.content[0].text)
+    clean_briefing = narrative_raw.strip()
     clean_briefing = reattach_links(clean_briefing, articles)
-    return clean_briefing, scores
+    verdict_text = _extract_verdict(clean_briefing)
+
+    final_scores = {
+        "macro": scores["scores"]["macro"],
+        "technicals": scores["scores"]["technicals"],
+        "sentiment": scores["scores"]["sentiment"],
+        "etf_flows": scores["scores"]["etf_flows"],
+        "industrial_demand": scores["scores"]["industrial_demand"],
+        "overall": scores["overall"],
+        "verdict": verdict_text,
+        "supply_risk": scores["supply_risk"],
+    }
+    return clean_briefing, final_scores

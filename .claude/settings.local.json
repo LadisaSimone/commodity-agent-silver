@@ -18,7 +18,9 @@
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/simoneladisa/Documents/projects/commodity-agent-silver/src/dashboard/app.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
       "Bash(python3 -)",
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('/Users/simoneladisa/Documents/projects/commodity-agent-silver/src/agents/summarizer.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
-      "Bash(python3 -c \"import json; d=json.load\\(open\\('outputs/daily/2026-06-30/raw/history.json'\\)\\); print\\(type\\(d\\), len\\(d\\) if hasattr\\(d,'__len__'\\) else 'n/a'\\)\")"
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('outputs/daily/2026-06-30/raw/history.json'\\)\\); print\\(type\\(d\\), len\\(d\\) if hasattr\\(d,'__len__'\\) else 'n/a'\\)\")",
+      "Bash(python3 -m py_compile src/agents/summarizer.py config/settings.py src/dashboard/app.py main.py)",
+      "Bash(python3 -m py_compile src/dashboard/app.py)"
     ]
   }
 }
