@@ -1,0 +1,38 @@
+{
+  "silver": {
+    "price": 61.26,
+    "change": -0.24,
+    "change_pct": -0.38,
+    "direction": "down",
+    "significant_move": false,
+    "vs_30d_high_pct": -19.7,
+    "vs_30d_low_pct": 5.5,
+    "rsi_14": 36.0,
+    "signal": "neutral",
+    "volatility_30d": 47.9
+  },
+  "gold": {
+    "price": 4137.8,
+    "change_pct": -0.1,
+    "direction": "down"
+  },
+  "ratio": {
+    "value": 67.5,
+    "vs_historical_avg": 2.5,
+    "signal": "silver_undervalued_vs_gold"
+  },
+  "dxy": {
+    "value": 100.96,
+    "change_pct": 0.07,
+    "change_bps": 7,
+    "direction": "up",
+    "signal": "mildly_bearish_for_silver"
+  },
+  "us10y": {
+    "value": 4.48,
+    "change_pct": -0.13,
+    "change_bps": -1,
+    "direction": "down",
+    "signal": "mildly_bullish_for_silver"
+  }
+}
