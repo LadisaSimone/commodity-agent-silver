@@ -35,9 +35,32 @@ def fetch_us10y_price() -> dict:
 
 
 def fetch_silver_history(days: int = 30) -> list[dict]:
-    hist = yf.Ticker(TICKER).history(period="40d")
+    # Period chosen to comfortably cover the requested `days`; existing
+    # callers passing days=30 keep the exact same "40d" behavior as before.
+    if days <= 40:
+        period = "40d"
+    elif days <= 185:
+        period = "6mo"
+    else:
+        period = "1y"
+    hist = yf.Ticker(TICKER).history(period=period)
     closes = hist["Close"].dropna().tail(days)
     return [
         {"date": idx.strftime("%Y-%m-%d"), "close": float(val)}
+        for idx, val in zip(closes.index, closes.values)
+    ]
+
+
+def fetch_silver_intraday(interval: str = "15m") -> list[dict]:
+    """Today's intraday silver price bars, for a 1D chart view.
+
+    Returns [] outside market hours / on days yfinance has no intraday
+    bars yet (e.g. right after a fresh trading session opens) — callers
+    should fall back to the last daily close in that case.
+    """
+    hist = yf.Ticker(TICKER).history(period="1d", interval=interval)
+    closes = hist["Close"].dropna()
+    return [
+        {"t": idx.strftime("%H:%M"), "p": float(val)}
         for idx, val in zip(closes.index, closes.values)
     ]

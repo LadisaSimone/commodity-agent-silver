@@ -355,6 +355,10 @@ def summarize(
         "etf_flows": scores["scores"]["etf_flows"],
         "industrial_demand": scores["scores"]["industrial_demand"],
         "overall": scores["overall"],
+        "overall_label": scores["overall_label"],
+        "ranked_drivers": scores["ranked_drivers"],
+        "dominant_category": scores["dominant_category"],
+        "weighted_explanation": scores["weighted_explanation"],
         "verdict": verdict_text,
         "supply_risk": scores["supply_risk"],
     }
